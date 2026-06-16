@@ -31,6 +31,11 @@
 
   <main>
     <section id="home" class="page active">
+      <div class="section-title">
+        <span>//</span>
+        <h2>Resumo do Bolão</h2>
+      </div>
+
       <div class="kpi-grid">
         <div class="kpi">
           <span>Líder</span>
@@ -57,15 +62,37 @@
         </div>
       </div>
 
-      <h2>Top 3</h2>
+      <div class="section-title">
+        <span>//</span>
+        <h2>Top 3</h2>
+      </div>
       <div id="top3" class="kpi-grid"></div>
 
-      <h2>Jogos de hoje</h2>
-      <div id="todayMatches" class="card-list"></div>
+      <div class="section-title">
+        <span>//</span>
+        <h2>Jogos do Dia</h2>
+      </div>
+      <div id="todayMatches" class="premium-match-grid"></div>
+
+      <div class="section-title">
+        <span>//</span>
+        <h2>Jogos Bônus</h2>
+      </div>
+      <div id="bonusMatches" class="bonus-grid"></div>
+
+      <div class="section-title">
+        <span>//</span>
+        <h2>Curiosidades</h2>
+      </div>
+      <div id="homeCuriosities" class="curiosity-grid"></div>
     </section>
 
     <section id="ranking" class="page">
-      <h2>Ranking geral</h2>
+      <div class="section-title">
+        <span>//</span>
+        <h2>Ranking Geral</h2>
+      </div>
+
       <div class="table-wrap">
         <table>
           <thead>
@@ -83,57 +110,99 @@
     </section>
 
     <section id="matches" class="page">
-      <h2>Todos os jogos</h2>
+      <div class="section-title">
+        <span>//</span>
+        <h2>Todos os Jogos</h2>
+      </div>
       <div id="matchesList" class="card-list"></div>
     </section>
 
     <section id="predictions" class="page">
-      <h2>Palpites</h2>
+      <div class="section-title">
+        <span>//</span>
+        <h2>Palpites</h2>
+      </div>
       <div id="predictionsList" class="card-list"></div>
     </section>
 
     <section id="stats" class="page">
-      <h2>Estatísticas</h2>
+      <div class="section-title">
+        <span>//</span>
+        <h2>Estatísticas do Bolão</h2>
+      </div>
+
       <div id="statsContent" class="kpi-grid"></div>
+
+      <div class="section-title">
+        <span>//</span>
+        <h2>Acertos</h2>
+      </div>
+      <div id="accuracyBoards" class="two-column-grid"></div>
+
+      <div class="section-title">
+        <span>//</span>
+        <h2>Insights Especiais</h2>
+      </div>
+      <div id="specialInsights" class="insight-list"></div>
+
+      <div class="section-title">
+        <span>//</span>
+        <h2>Quem Ainda Pode Virar</h2>
+      </div>
+      <div id="comebackTable" class="table-wrap"></div>
     </section>
 
     <section id="charts" class="page">
-  <h2>Central de Gráficos</h2>
+      <div class="section-title">
+        <span>//</span>
+        <h2>Central de Gráficos</h2>
+      </div>
 
-  <div class="chart-grid">
-    <div class="chart-card">
-      <h3>Ranking de Pontos</h3>
-      <canvas id="pointsChart"></canvas>
-    </div>
+      <div class="chart-grid">
+        <div class="chart-card">
+          <h3>Ranking de Pontos</h3>
+          <canvas id="pointsChart"></canvas>
+        </div>
 
-    <div class="chart-card">
-      <h3>Placares Exatos por Participante</h3>
-      <canvas id="exactChart"></canvas>
-    </div>
+        <div class="chart-card">
+          <h3>Placares Exatos por Participante</h3>
+          <canvas id="exactChart"></canvas>
+        </div>
 
-    <div class="chart-card">
-      <h3>Acertos por Participante</h3>
-      <canvas id="correctChart"></canvas>
-    </div>
+        <div class="chart-card">
+          <h3>Acertos por Participante</h3>
+          <canvas id="correctChart"></canvas>
+        </div>
 
-    <div class="chart-card">
-      <h3>Distribuição dos Resultados Palpitados</h3>
-      <canvas id="predictionResultChart"></canvas>
-    </div>
+        <div class="chart-card">
+          <h3>Distribuição dos Resultados Palpitados</h3>
+          <canvas id="predictionResultChart"></canvas>
+        </div>
 
-    <div class="chart-card">
-      <h3>Jogos por Status</h3>
-      <canvas id="matchStatusChart"></canvas>
-    </div>
+        <div class="chart-card">
+          <h3>Jogos por Status</h3>
+          <canvas id="matchStatusChart"></canvas>
+        </div>
 
-    <div class="chart-card">
-      <h3>Pontos x Placares Exatos</h3>
-      <canvas id="pointsExactChart"></canvas>
-    </div>
-  </div>
-</section>
+        <div class="chart-card">
+          <h3>Pontos x Placares Exatos</h3>
+          <canvas id="pointsExactChart"></canvas>
+        </div>
+
+        <div class="chart-card">
+          <h3>Volume de Palpites</h3>
+          <canvas id="predictionVolumeChart"></canvas>
+        </div>
+
+        <div class="chart-card">
+          <h3>Gols por Jogo Finalizado</h3>
+          <canvas id="finishedGoalsChart"></canvas>
+        </div>
+      </div>
+    </section>
   </main>
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="app.js"></script>
 </body>
 </html>
