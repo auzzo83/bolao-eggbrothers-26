@@ -201,4 +201,24 @@ tr:first-child td {
   main {
     padding: 20px;
   }
+  .top-card {
+  border-color: rgba(250, 204, 21, 0.55);
+}
+
+.locked {
+  color: #facc15;
+  font-weight: 700;
+}
+
+.prediction-card {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 12px;
+}
+
+.prediction-card strong {
+  display: block;
+  margin-bottom: 4px;
+}
 }
