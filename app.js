@@ -1,7 +1,11 @@
-const CSV_PARTICIPANTS = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRqE3kkDDcPtqpGJ3PguUDsikJMNFbm0zdl9AJeK6e-_egbJmgYX29r50ESGoFqV0qe_aToL4aNgbBh/pub?gid=496109362&single=true&output=csv";
-const CSV_MATCHES = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRqE3kkDDcPtqpGJ3PguUDsikJMNFbm0zdl9AJeK6e-_egbJmgYX29r50ESGoFqV0qe_aToL4aNgbBh/pub?gid=606750094&single=true&output=csv";
-const CSV_PREDICTIONS = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRqE3kkDDcPtqpGJ3PguUDsikJMNFbm0zdl9AJeK6e-_egbJmgYX29r50ESGoFqV0qe_aToL4aNgbBh/pub?gid=1378690055&single=true&output=csv";
-const CSV_RANKING = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRqE3kkDDcPtqpGJ3PguUDsikJMNFbm0zdl9AJeK6e-_egbJmgYX29r50ESGoFqV0qe_aToL4aNgbBh/pub?gid=379623986&single=true&output=csv";
+function proxy(url) {
+  return `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
+}
+
+const CSV_PARTICIPANTS = proxy("https://docs.google.com/spreadsheets/d/e/2PACX-1vRqE3kkDDcPtqpGJ3PguUDsikJMNFbm0zdl9AJeK6e-_egbJmgYX29r50ESGoFqV0qe_aToL4aNgbBh/pub?gid=496109362&single=true&output=csv");
+const CSV_MATCHES = proxy("https://docs.google.com/spreadsheets/d/e/2PACX-1vRqE3kkDDcPtqpGJ3PguUDsikJMNFbm0zdl9AJeK6e-_egbJmgYX29r50ESGoFqV0qe_aToL4aNgbBh/pub?gid=606750094&single=true&output=csv");
+const CSV_PREDICTIONS = proxy("https://docs.google.com/spreadsheets/d/e/2PACX-1vRqE3kkDDcPtqpGJ3PguUDsikJMNFbm0zdl9AJeK6e-_egbJmgYX29r50ESGoFqV0qe_aToL4aNgbBh/pub?gid=1378690055&single=true&output=csv");
+const CSV_RANKING = proxy("https://docs.google.com/spreadsheets/d/e/2PACX-1vRqE3kkDDcPtqpGJ3PguUDsikJMNFbm0zdl9AJeK6e-_egbJmgYX29r50ESGoFqV0qe_aToL4aNgbBh/pub?gid=379623986&single=true&output=csv");
 
 let participants = [];
 let matches = [];
@@ -14,16 +18,16 @@ function showPage(pageId) {
 }
 
 async function fetchCsv(url, name) {
-  const response = await fetch(url);
+  const response = await fetch(url, { cache: "no-store" });
 
   if (!response.ok) {
-    throw new Error(`${name} falhou. Status: ${response.status}. URL: ${url}`);
+    throw new Error(`${name} falhou. Status: ${response.status}`);
   }
 
   const text = await response.text();
 
   if (!text || text.includes("<html") || text.includes("<!DOCTYPE html")) {
-    throw new Error(`${name} não retornou CSV. Provavelmente o link está como HTML/iframe, não CSV.`);
+    throw new Error(`${name} não retornou CSV.`);
   }
 
   return parseCsv(text);
@@ -31,7 +35,7 @@ async function fetchCsv(url, name) {
 
 function parseCsv(text) {
   const rows = text.trim().split(/\r?\n/);
-  const headers = splitCsvLine(rows[0]).map(h => h.trim());
+  const headers = splitCsvLine(rows[0]).map(h => h.replace("\ufeff", "").trim());
 
   return rows.slice(1).map(row => {
     const values = splitCsvLine(row);
@@ -76,23 +80,51 @@ function getMatchResult(home, away) {
   return "draw";
 }
 
+function isFinished(match) {
+  return String(match.status || "").toLowerCase() === "finished";
+}
+
 function getParticipantName(participantId) {
   const participant = participants.find(p => String(p.participant_id) === String(participantId));
   return participant ? participant.name || participant.nickname : "Participante";
 }
 
+function getExactScores(row) {
+  return Number(row.exact_scores || row.exactScores || 0);
+}
+
+function getCorrectResults(row) {
+  return Number(row.correct_results || row.correctResults || 0);
+}
+
+function getTodayLocal() {
+  const now = new Date();
+  const yyyy = now.getFullYear();
+  const mm = String(now.getMonth() + 1).padStart(2, "0");
+  const dd = String(now.getDate()).padStart(2, "0");
+  return `${yyyy}-${mm}-${dd}`;
+}
+
 function renderHome() {
   const leader = ranking[0];
-  const finished = matches.filter(m => m.status === "finished").length;
-  const exactTotal = ranking.reduce((sum, r) => sum + Number(r.exact_scores || r.exactScores || 0), 0);
+  const finished = matches.filter(isFinished).length;
+  const exactTotal = ranking.reduce((sum, r) => sum + getExactScores(r), 0);
 
   document.getElementById("leaderName").innerText = leader ? leader.name : "-";
-  document.getElementById("leaderPoints").innerText = leader ? `${leader.points} pts` : "- pts";
+  document.getElementById("leaderPoints").innerText = leader ? `${leader.points || 0} pts` : "- pts";
   document.getElementById("totalParticipants").innerText = participants.length;
   document.getElementById("finishedMatches").innerText = finished;
   document.getElementById("exactScores").innerText = exactTotal;
 
-  const today = new Date().toISOString().slice(0, 10);
+  document.getElementById("top3").innerHTML = ranking.slice(0, 3).map((p, i) => `
+    <div class="kpi top-card">
+      <span>${i === 0 ? "🏆 Líder" : i === 1 ? "🥈 Segundo lugar" : "🥉 Terceiro lugar"}</span>
+      <strong>${p.name || p.nickname || "-"}</strong>
+      <small>${p.points || 0} pts</small>
+    </div>
+  `).join("");
+
+  const today = getTodayLocal();
   const todayMatches = matches.filter(m => m.date === today);
 
   document.getElementById("todayMatches").innerHTML =
@@ -105,15 +137,15 @@ function renderRanking() {
   document.getElementById("rankingBody").innerHTML = ranking.map((r, index) => `
     <tr>
       <td>
-       ${index === 0 ? '🏆' :
-         index === 1 ? '🥈' :
-         index === 2 ? '🥉' :
-         index + 1}
+        ${index === 0 ? "🏆" :
+          index === 1 ? "🥈" :
+          index === 2 ? "🥉" :
+          index + 1}
       </td>
       <td>${r.name || r.nickname || "-"}</td>
       <td>${r.points || 0}</td>
-      <td>${r.exact_scores || r.exactScores || 0}</td>
-      <td>${r.correct_results || r.correctResults || 0}</td>
+      <td>${getExactScores(r)}</td>
+      <td>${getCorrectResults(r)}</td>
     </tr>
   `).join("");
 }
@@ -125,11 +157,15 @@ function renderMatches() {
 function renderMatchCard(match) {
   const homeScore = match.home_score !== "" ? match.home_score : "-";
   const awayScore = match.away_score !== "" ? match.away_score : "-";
+  const homeFlag = match.home_flag || "";
+  const awayFlag = match.away_flag || "";
 
   return `
     <div class="match-card">
       <span class="badge">${match.status || "future"}</span>
-      <div class="score">${match.home_team} ${homeScore} x ${awayScore} ${match.away_team}</div>
+      <div class="score">
+        ${homeFlag} ${match.home_team} ${homeScore} x ${awayScore} ${awayFlag} ${match.away_team}
+      </div>
       <div class="meta">${match.date || "-"} · ${match.time || "-"} · ${match.group || ""}</div>
       ${renderPredictionSummary(match)}
     </div>
@@ -143,6 +179,10 @@ function renderPredictionSummary(match) {
 
   if (!matchPredictions.length) {
     return `<div class="meta">Sem palpites cadastrados.</div>`;
+  }
+
+  if (!isFinished(match)) {
+    return `<div class="meta locked">🔒 Palpites bloqueados até o fim da partida.</div>`;
   }
 
   const homeWins = matchPredictions.filter(p => getMatchResult(p.pred_home, p.pred_away) === "home").length;
@@ -172,6 +212,16 @@ function renderPredictions() {
 
     if (!match) return "";
 
+    if (!isFinished(match)) {
+      return `
+        <div class="match-card">
+          <span class="badge">${match.date || "-"}</span>
+          <div class="score">${match.home_team} x ${match.away_team}</div>
+          <div class="meta locked">🔒 Palpites bloqueados até o fim da partida.</div>
+        </div>
+      `;
+    }
+
     const cards = grouped[matchId].map(pred => `
       <div class="prediction-card">
         <strong>${getParticipantName(pred.participant_id)}</strong>
@@ -181,7 +231,7 @@ function renderPredictions() {
 
     return `
       <div class="match-card">
-        <span class="badge">${match.date}</span>
+        <span class="badge">${match.date || "-"}</span>
         <div class="score">${match.home_team} x ${match.away_team}</div>
         <div class="card-list">${cards}</div>
       </div>
@@ -193,7 +243,8 @@ function renderStats() {
   const totalPoints = ranking.reduce((sum, r) => sum + Number(r.points || 0), 0);
   const avgPoints = ranking.length ? Math.round(totalPoints / ranking.length) : 0;
   const totalPredictions = predictions.length;
-  const finished = matches.filter(m => m.status === "finished").length;
+  const finished = matches.filter(isFinished).length;
+  const exactTotal = ranking.reduce((sum, r) => sum + getExactScores(r), 0);
 
   document.getElementById("statsContent").innerHTML = `
     <div class="kpi">
@@ -219,15 +270,21 @@ function renderStats() {
       <strong>${finished}</strong>
       <small>com resultado</small>
     </div>
+
+    <div class="kpi">
+      <span>Placares exatos</span>
+      <strong>${exactTotal}</strong>
+      <small>cravadas no bolão</small>
+    </div>
   `;
 }
 
 async function init() {
   try {
-   participants = await fetchCsv(CSV_PARTICIPANTS, "CSV_PARTICIPANTS");
-   matches = await fetchCsv(CSV_MATCHES, "CSV_MATCHES");
-   predictions = await fetchCsv(CSV_PREDICTIONS, "CSV_PREDICTIONS");
-   ranking = await fetchCsv(CSV_RANKING, "CSV_RANKING");
+    participants = await fetchCsv(CSV_PARTICIPANTS, "CSV_PARTICIPANTS");
+    matches = await fetchCsv(CSV_MATCHES, "CSV_MATCHES");
+    predictions = await fetchCsv(CSV_PREDICTIONS, "CSV_PREDICTIONS");
+    ranking = await fetchCsv(CSV_RANKING, "CSV_RANKING");
 
     ranking = ranking.sort((a, b) => Number(b.points || 0) - Number(a.points || 0));
 
@@ -252,3 +309,7 @@ async function init() {
 }
 
 init();
+
+setInterval(() => {
+  location.reload();
+}, 300000);
