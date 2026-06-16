@@ -4,97 +4,110 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Bolão Eggbrothers 26</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
+
+  <!-- MODAL PARTICIPANTE -->
+  <div id="participantModal" class="modal-overlay" onclick="closeParticipantModal(event)">
+    <div class="modal-box">
+      <button class="modal-close" onclick="closeParticipantModal()">✕</button>
+      <div id="modalContent"></div>
+    </div>
+  </div>
+
   <header class="hero">
-    <div>
-      <p class="eyebrow">Copa do Mundo 2026</p>
-      <h1>Bolão Eggbrothers 26</h1>
+    <div class="hero-brand">
+      <p class="eyebrow">⚽ Copa do Mundo 2026</p>
+      <h1>Bolão <span class="brand-accent">Eggbrothers</span> <span class="brand-year">26</span></h1>
       <p class="subtitle">QUEM GANHAR, GANHOU.</p>
     </div>
-
-    <div class="hero-card">
-      <span>Última atualização</span>
-      <strong id="lastUpdated">Carregando...</strong>
+    <div class="hero-meta">
+      <div class="hero-card">
+        <span>Última atualização</span>
+        <strong id="lastUpdated">Carregando...</strong>
+      </div>
+      <div class="hero-card pulse-card">
+        <span>🔴 AO VIVO</span>
+        <strong id="liveStatus">Verificando...</strong>
+      </div>
     </div>
   </header>
 
   <nav class="nav">
-    <button onclick="showPage('home')">Home</button>
-    <button onclick="showPage('ranking')">Ranking</button>
-    <button onclick="showPage('matches')">Jogos</button>
-    <button onclick="showPage('predictions')">Palpites</button>
-    <button onclick="showPage('stats')">Estatísticas</button>
-    <button onclick="showPage('charts')">Gráficos</button>
+    <button class="nav-btn active" onclick="showPage('home', this)">🏠 Home</button>
+    <button class="nav-btn" onclick="showPage('ranking', this)">🏆 Ranking</button>
+    <button class="nav-btn" onclick="showPage('matches', this)">⚽ Jogos</button>
+    <button class="nav-btn" onclick="showPage('predictions', this)">🎯 Palpites</button>
+    <button class="nav-btn" onclick="showPage('stats', this)">📊 Estatísticas</button>
+    <button class="nav-btn" onclick="showPage('charts', this)">📈 Gráficos</button>
   </nav>
 
   <main>
-    <section id="home" class="page active">
-      <div class="section-title">
-        <span>//</span>
-        <h2>Resumo do Bolão</h2>
-      </div>
 
-      <div class="kpi-grid">
-        <div class="kpi">
-          <span>Líder</span>
+    <!-- HOME -->
+    <section id="home" class="page active">
+
+      <div class="kpi-grid kpi-hero-grid">
+        <div class="kpi kpi-leader">
+          <span>👑 Líder Atual</span>
           <strong id="leaderName">-</strong>
           <small id="leaderPoints">- pts</small>
         </div>
-
         <div class="kpi">
-          <span>Participantes</span>
+          <span>👥 Participantes</span>
           <strong id="totalParticipants">-</strong>
-          <small>amigos no bolão</small>
+          <small>no bolão</small>
         </div>
-
         <div class="kpi">
-          <span>Jogos finalizados</span>
+          <span>✅ Jogos Finalizados</span>
           <strong id="finishedMatches">-</strong>
-          <small>com pontuação calculada</small>
+          <small>com resultado</small>
         </div>
-
         <div class="kpi">
-          <span>Placares exatos</span>
+          <span>🎯 Placares Exatos</span>
           <strong id="exactScores">-</strong>
-          <small>na competição</small>
+          <small>cravadas no bolão</small>
         </div>
       </div>
 
       <div class="section-title">
-        <span>//</span>
-        <h2>Top 3</h2>
+        <span class="section-icon">🥇</span>
+        <h2>Pódio</h2>
       </div>
-      <div id="top3" class="kpi-grid"></div>
+      <div id="top3" class="podium-grid"></div>
 
       <div class="section-title">
-        <span>//</span>
+        <span class="section-icon">📅</span>
         <h2>Jogos do Dia</h2>
       </div>
       <div id="todayMatches" class="premium-match-grid"></div>
 
       <div class="section-title">
-        <span>//</span>
+        <span class="section-icon">⭐</span>
         <h2>Jogos Bônus</h2>
       </div>
       <div id="bonusMatches" class="bonus-grid"></div>
 
       <div class="section-title">
-        <span>//</span>
-        <h2>Curiosidades</h2>
+        <span class="section-icon">💡</span>
+        <h2>Curiosidades do Bolão</h2>
       </div>
       <div id="homeCuriosities" class="curiosity-grid"></div>
+
     </section>
 
+    <!-- RANKING -->
     <section id="ranking" class="page">
       <div class="section-title">
-        <span>//</span>
+        <span class="section-icon">🏆</span>
         <h2>Ranking Geral</h2>
       </div>
-
-      <div class="table-wrap">
-        <table>
+      <div class="table-wrap ranking-table-wrap">
+        <table id="rankingTable">
           <thead>
             <tr>
               <th>#</th>
@@ -102,6 +115,7 @@
               <th>Pontos</th>
               <th>Exatos</th>
               <th>Acertos</th>
+              <th>Aproveit.</th>
             </tr>
           </thead>
           <tbody id="rankingBody"></tbody>
@@ -109,98 +123,111 @@
       </div>
     </section>
 
+    <!-- JOGOS -->
     <section id="matches" class="page">
       <div class="section-title">
-        <span>//</span>
+        <span class="section-icon">⚽</span>
         <h2>Todos os Jogos</h2>
+      </div>
+      <div class="matches-filter">
+        <button class="filter-btn active" onclick="filterMatches('all', this)">Todos</button>
+        <button class="filter-btn" onclick="filterMatches('finished', this)">Finalizados</button>
+        <button class="filter-btn" onclick="filterMatches('future', this)">Próximos</button>
       </div>
       <div id="matchesList" class="card-list"></div>
     </section>
 
+    <!-- PALPITES -->
     <section id="predictions" class="page">
       <div class="section-title">
-        <span>//</span>
+        <span class="section-icon">🎯</span>
         <h2>Palpites</h2>
       </div>
       <div id="predictionsList" class="card-list"></div>
     </section>
 
+    <!-- ESTATÍSTICAS -->
     <section id="stats" class="page">
       <div class="section-title">
-        <span>//</span>
-        <h2>Estatísticas do Bolão</h2>
+        <span class="section-icon">📊</span>
+        <h2>Painel Geral</h2>
       </div>
-
       <div id="statsContent" class="kpi-grid"></div>
 
       <div class="section-title">
-        <span>//</span>
-        <h2>Acertos</h2>
+        <span class="section-icon">🎯</span>
+        <h2>Rankings de Acertos</h2>
       </div>
       <div id="accuracyBoards" class="two-column-grid"></div>
 
       <div class="section-title">
-        <span>//</span>
+        <span class="section-icon">🔍</span>
         <h2>Insights Especiais</h2>
       </div>
       <div id="specialInsights" class="insight-list"></div>
 
       <div class="section-title">
-        <span>//</span>
+        <span class="section-icon">📈</span>
         <h2>Quem Ainda Pode Virar</h2>
       </div>
       <div id="comebackTable" class="table-wrap"></div>
     </section>
 
+    <!-- GRÁFICOS -->
     <section id="charts" class="page">
       <div class="section-title">
-        <span>//</span>
+        <span class="section-icon">📈</span>
         <h2>Central de Gráficos</h2>
       </div>
-
       <div class="chart-grid">
         <div class="chart-card">
-          <h3>Ranking de Pontos</h3>
+          <h3>🏆 Ranking de Pontos</h3>
           <canvas id="pointsChart"></canvas>
         </div>
-
         <div class="chart-card">
-          <h3>Placares Exatos por Participante</h3>
+          <h3>🎯 Placares Exatos</h3>
           <canvas id="exactChart"></canvas>
         </div>
-
         <div class="chart-card">
-          <h3>Acertos por Participante</h3>
+          <h3>✅ Acertos por Participante</h3>
           <canvas id="correctChart"></canvas>
         </div>
-
         <div class="chart-card">
-          <h3>Distribuição dos Resultados Palpitados</h3>
+          <h3>🔵 Distribuição dos Palpites</h3>
           <canvas id="predictionResultChart"></canvas>
         </div>
-
         <div class="chart-card">
-          <h3>Jogos por Status</h3>
+          <h3>📋 Jogos por Status</h3>
           <canvas id="matchStatusChart"></canvas>
         </div>
-
         <div class="chart-card">
-          <h3>Pontos x Placares Exatos</h3>
+          <h3>🔗 Pontos x Placares Exatos</h3>
           <canvas id="pointsExactChart"></canvas>
         </div>
-
         <div class="chart-card">
-          <h3>Volume de Palpites</h3>
+          <h3>📦 Volume de Palpites</h3>
           <canvas id="predictionVolumeChart"></canvas>
         </div>
-
         <div class="chart-card">
-          <h3>Gols por Jogo Finalizado</h3>
+          <h3>⚽ Gols por Jogo</h3>
           <canvas id="finishedGoalsChart"></canvas>
+        </div>
+        <div class="chart-card">
+          <h3>🌍 Países Mais Apostados</h3>
+          <canvas id="topCountriesChart"></canvas>
+        </div>
+        <div class="chart-card">
+          <h3>📊 Resultados Mais Palpitados</h3>
+          <canvas id="topResultsChart"></canvas>
         </div>
       </div>
     </section>
+
   </main>
+
+  <footer class="site-footer">
+    <p>Bolão Eggbrothers 26 · Copa do Mundo 2026 · Atualiza a cada 5 min</p>
+  </footer>
 
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="app.js"></script>
