@@ -26,6 +26,7 @@
     <button onclick="showPage('matches')">Jogos</button>
     <button onclick="showPage('predictions')">Palpites</button>
     <button onclick="showPage('stats')">Estatísticas</button>
+    <button onclick="showPage('charts')">Gráficos</button>
   </nav>
 
   <main>
@@ -95,8 +96,44 @@
       <h2>Estatísticas</h2>
       <div id="statsContent" class="kpi-grid"></div>
     </section>
-  </main>
 
+    <section id="charts" class="page">
+  <h2>Central de Gráficos</h2>
+
+  <div class="chart-grid">
+    <div class="chart-card">
+      <h3>Ranking de Pontos</h3>
+      <canvas id="pointsChart"></canvas>
+    </div>
+
+    <div class="chart-card">
+      <h3>Placares Exatos por Participante</h3>
+      <canvas id="exactChart"></canvas>
+    </div>
+
+    <div class="chart-card">
+      <h3>Acertos por Participante</h3>
+      <canvas id="correctChart"></canvas>
+    </div>
+
+    <div class="chart-card">
+      <h3>Distribuição dos Resultados Palpitados</h3>
+      <canvas id="predictionResultChart"></canvas>
+    </div>
+
+    <div class="chart-card">
+      <h3>Jogos por Status</h3>
+      <canvas id="matchStatusChart"></canvas>
+    </div>
+
+    <div class="chart-card">
+      <h3>Pontos x Placares Exatos</h3>
+      <canvas id="pointsExactChart"></canvas>
+    </div>
+  </div>
+</section>
+  </main>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="app.js"></script>
 </body>
 </html>
