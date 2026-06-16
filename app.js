@@ -19,7 +19,7 @@ function showPage(pageId) {
 }
 
 async function fetchCsv(url, name) {
-  const response = await fetch(url, { cache: "no-store" });
+  const response = await fetch(url);
 
   if (!response.ok) {
     throw new Error(`${name} falhou. Status: ${response.status}`);
