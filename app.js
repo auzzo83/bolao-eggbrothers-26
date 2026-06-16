@@ -1,12 +1,13 @@
-function proxy(url) {
-  return `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
+const SHEET_ID = "2PACX-1vRqE3kkDDcPtqpGJ3PguUDsikJMNFbm0zdl9AJeK6e-_egbJmgYX29r50ESGoFqV0qe_aToL4aNgbBh";
+
+function googleCsv(gid) {
+  return `https://docs.google.com/spreadsheets/d/e/${SHEET_ID}/gviz/tq?tqx=out:csv&gid=${gid}`;
 }
 
-const CSV_PARTICIPANTS = proxy("https://docs.google.com/spreadsheets/d/e/2PACX-1vRqE3kkDDcPtqpGJ3PguUDsikJMNFbm0zdl9AJeK6e-_egbJmgYX29r50ESGoFqV0qe_aToL4aNgbBh/pub?gid=496109362&single=true&output=csv");
-const CSV_MATCHES = proxy("https://docs.google.com/spreadsheets/d/e/2PACX-1vRqE3kkDDcPtqpGJ3PguUDsikJMNFbm0zdl9AJeK6e-_egbJmgYX29r50ESGoFqV0qe_aToL4aNgbBh/pub?gid=606750094&single=true&output=csv");
-const CSV_PREDICTIONS = proxy("https://docs.google.com/spreadsheets/d/e/2PACX-1vRqE3kkDDcPtqpGJ3PguUDsikJMNFbm0zdl9AJeK6e-_egbJmgYX29r50ESGoFqV0qe_aToL4aNgbBh/pub?gid=1378690055&single=true&output=csv");
-const CSV_RANKING = proxy("https://docs.google.com/spreadsheets/d/e/2PACX-1vRqE3kkDDcPtqpGJ3PguUDsikJMNFbm0zdl9AJeK6e-_egbJmgYX29r50ESGoFqV0qe_aToL4aNgbBh/pub?gid=379623986&single=true&output=csv");
-
+const CSV_PARTICIPANTS = googleCsv("496109362");
+const CSV_MATCHES = googleCsv("606750094");
+const CSV_PREDICTIONS = googleCsv("1378690055");
+const CSV_RANKING = googleCsv("379623986");
 let participants = [];
 let matches = [];
 let predictions = [];
