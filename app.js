@@ -1,14 +1,17 @@
-function proxy(url) {
-  return `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
+const SHEETS = {
+  PARTICIPANTS: "https://docs.google.com/spreadsheets/d/e/2PACX-1vRqE3kkDDcPtqpGJ3PguUDsikJMNFbm0zdl9AJeK6e-_egbJmgYX29r50ESGoFqV0qe_aToL4aNgbBh/pub?gid=496109362&single=true&output=csv",
+  MATCHES: "https://docs.google.com/spreadsheets/d/e/2PACX-1vRqE3kkDDcPtqpGJ3PguUDsikJMNFbm0zdl9AJeK6e-_egbJmgYX29r50ESGoFqV0qe_aToL4aNgbBh/pub?gid=606750094&single=true&output=csv",
+  PREDICTIONS: "https://docs.google.com/spreadsheets/d/e/2PACX-1vRqE3kkDDcPtqpGJ3PguUDsikJMNFbm0zdl9AJeK6e-_egbJmgYX29r50ESGoFqV0qe_aToL4aNgbBh/pub?gid=1378690055&single=true&output=csv",
+  RANKING: "https://docs.google.com/spreadsheets/d/e/2PACX-1vRqE3kkDDcPtqpGJ3PguUDsikJMNFbm0zdl9AJeK6e-_egbJmgYX29r50ESGoFqV0qe_aToL4aNgbBh/pub?gid=379623986&single=true&output=csv"
+};
+
+function proxiedUrls(url) {
+  return [
+    url,
+    `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`,
+    `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`
+  ];
 }
-
-const CSV_PARTICIPANTS = proxy("https://docs.google.com/spreadsheets/d/e/2PACX-1vRqE3kkDDcPtqpGJ3PguUDsikJMNFbm0zdl9AJeK6e-_egbJmgYX29r50ESGoFqV0qe_aToL4aNgbBh/pub?gid=496109362&single=true&output=csv");
-
-const CSV_MATCHES = proxy("https://docs.google.com/spreadsheets/d/e/2PACX-1vRqE3kkDDcPtqpGJ3PguUDsikJMNFbm0zdl9AJeK6e-_egbJmgYX29r50ESGoFqV0qe_aToL4aNgbBh/pub?gid=606750094&single=true&output=csv");
-
-const CSV_PREDICTIONS = proxy("https://docs.google.com/spreadsheets/d/e/2PACX-1vRqE3kkDDcPtqpGJ3PguUDsikJMNFbm0zdl9AJeK6e-_egbJmgYX29r50ESGoFqV0qe_aToL4aNgbBh/pub?gid=1378690055&single=true&output=csv");
-
-const CSV_RANKING = proxy("https://docs.google.com/spreadsheets/d/e/2PACX-1vRqE3kkDDcPtqpGJ3PguUDsikJMNFbm0zdl9AJeK6e-_egbJmgYX29r50ESGoFqV0qe_aToL4aNgbBh/pub?gid=379623986&single=true&output=csv");
 
 let participants = [];
 let matches = [];
@@ -20,20 +23,33 @@ function showPage(pageId) {
   document.getElementById(pageId).classList.add("active");
 }
 
-async function fetchCsv(url, name) {
-  const response = await fetch(url);
+async function fetchCsv(baseUrl, name) {
+  const urls = proxiedUrls(baseUrl);
+  let lastError = "";
 
-  if (!response.ok) {
-    throw new Error(`${name} falhou. Status: ${response.status}`);
+  for (const url of urls) {
+    try {
+      const response = await fetch(url);
+
+      if (!response.ok) {
+        lastError = `${name} falhou. Status: ${response.status}`;
+        continue;
+      }
+
+      const text = await response.text();
+
+      if (!text || text.includes("<html") || text.includes("<!DOCTYPE html")) {
+        lastError = `${name} retornou HTML, não CSV.`;
+        continue;
+      }
+
+      return parseCsv(text);
+    } catch (error) {
+      lastError = `${name} falhou: ${error.message}`;
+    }
   }
 
-  const text = await response.text();
-
-  if (!text || text.includes("<html") || text.includes("<!DOCTYPE html")) {
-    throw new Error(`${name} não retornou CSV.`);
-  }
-
-  return parseCsv(text);
+  throw new Error(lastError || `${name} falhou ao carregar.`);
 }
 
 function parseCsv(text) {
@@ -59,8 +75,12 @@ function splitCsvLine(line) {
 
   for (let i = 0; i < line.length; i++) {
     const char = line[i];
+    const next = line[i + 1];
 
-    if (char === '"') {
+    if (char === '"' && insideQuotes && next === '"') {
+      current += '"';
+      i++;
+    } else if (char === '"') {
       insideQuotes = !insideQuotes;
     } else if (char === "," && !insideQuotes) {
       result.push(current);
@@ -139,12 +159,7 @@ function renderHome() {
 function renderRanking() {
   document.getElementById("rankingBody").innerHTML = ranking.map((r, index) => `
     <tr>
-      <td>
-        ${index === 0 ? "🏆" :
-          index === 1 ? "🥈" :
-          index === 2 ? "🥉" :
-          index + 1}
-      </td>
+      <td>${index === 0 ? "🏆" : index === 1 ? "🥈" : index === 2 ? "🥉" : index + 1}</td>
       <td>${r.name || r.nickname || "-"}</td>
       <td>${r.points || 0}</td>
       <td>${getExactScores(r)}</td>
@@ -284,10 +299,10 @@ function renderStats() {
 
 async function init() {
   try {
-    participants = await fetchCsv(CSV_PARTICIPANTS, "CSV_PARTICIPANTS");
-    matches = await fetchCsv(CSV_MATCHES, "CSV_MATCHES");
-    predictions = await fetchCsv(CSV_PREDICTIONS, "CSV_PREDICTIONS");
-    ranking = await fetchCsv(CSV_RANKING, "CSV_RANKING");
+    participants = await fetchCsv(SHEETS.PARTICIPANTS, "CSV_PARTICIPANTS");
+    matches = await fetchCsv(SHEETS.MATCHES, "CSV_MATCHES");
+    predictions = await fetchCsv(SHEETS.PREDICTIONS, "CSV_PREDICTIONS");
+    ranking = await fetchCsv(SHEETS.RANKING, "CSV_RANKING");
 
     ranking = ranking.sort((a, b) => Number(b.points || 0) - Number(a.points || 0));
 
@@ -314,5 +329,5 @@ async function init() {
 init();
 
 setInterval(() => {
-  location.reload();
+  init();
 }, 300000);
