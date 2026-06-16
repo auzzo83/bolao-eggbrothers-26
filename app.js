@@ -17,6 +17,7 @@ let participants = [];
 let matches = [];
 let predictions = [];
 let ranking = [];
+let charts = {};
 
 function showPage(pageId) {
   document.querySelectorAll(".page").forEach(page => page.classList.remove("active"));
@@ -297,6 +298,238 @@ function renderStats() {
   `;
 }
 
+function destroyChart(id) {
+  if (charts[id]) {
+    charts[id].destroy();
+  }
+}
+
+function createChart(id, config) {
+  destroyChart(id);
+
+  const ctx = document.getElementById(id);
+
+  if (!ctx || typeof Chart === "undefined") return;
+
+  charts[id] = new Chart(ctx, config);
+}
+
+function renderCharts() {
+  renderPointsChart();
+  renderExactChart();
+  renderCorrectChart();
+  renderPredictionResultChart();
+  renderMatchStatusChart();
+  renderPointsExactChart();
+  renderPredictionVolumeChart();
+  renderFinishedGoalsChart();
+}
+
+function getTopRanking(limit = 15) {
+  return ranking.slice(0, limit);
+}
+
+function renderPointsChart() {
+  const data = getTopRanking();
+
+  createChart("pointsChart", {
+    type: "bar",
+    data: {
+      labels: data.map(p => p.name || p.nickname || "-"),
+      datasets: [{
+        label: "Pontos",
+        data: data.map(p => Number(p.points || 0))
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { display: false }
+      }
+    }
+  });
+}
+
+function renderExactChart() {
+  const data = getTopRanking();
+
+  createChart("exactChart", {
+    type: "bar",
+    data: {
+      labels: data.map(p => p.name || p.nickname || "-"),
+      datasets: [{
+        label: "Placares exatos",
+        data: data.map(p => getExactScores(p))
+      }]
+    },
+    options: {
+      indexAxis: "y",
+      responsive: true,
+      plugins: {
+        legend: { display: false }
+      }
+    }
+  });
+}
+
+function renderCorrectChart() {
+  const data = getTopRanking();
+
+  createChart("correctChart", {
+    type: "bar",
+    data: {
+      labels: data.map(p => p.name || p.nickname || "-"),
+      datasets: [{
+        label: "Acertos",
+        data: data.map(p => getCorrectResults(p))
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { display: false }
+      }
+    }
+  });
+}
+
+function renderPredictionResultChart() {
+  let home = 0;
+  let draw = 0;
+  let away = 0;
+
+  predictions.forEach(p => {
+    if (p.pred_home === "" || p.pred_away === "") return;
+
+    const result = getMatchResult(p.pred_home, p.pred_away);
+
+    if (result === "home") home++;
+    if (result === "draw") draw++;
+    if (result === "away") away++;
+  });
+
+  createChart("predictionResultChart", {
+    type: "doughnut",
+    data: {
+      labels: ["Mandante", "Empate", "Visitante"],
+      datasets: [{
+        label: "Palpites",
+        data: [home, draw, away]
+      }]
+    },
+    options: {
+      responsive: true
+    }
+  });
+}
+
+function renderMatchStatusChart() {
+  const statusCount = {};
+
+  matches.forEach(match => {
+    const status = match.status || "future";
+    statusCount[status] = (statusCount[status] || 0) + 1;
+  });
+
+  createChart("matchStatusChart", {
+    type: "pie",
+    data: {
+      labels: Object.keys(statusCount),
+      datasets: [{
+        label: "Jogos",
+        data: Object.values(statusCount)
+      }]
+    },
+    options: {
+      responsive: true
+    }
+  });
+}
+
+function renderPointsExactChart() {
+  const data = getTopRanking();
+
+  createChart("pointsExactChart", {
+    type: "scatter",
+    data: {
+      datasets: [{
+        label: "Participantes",
+        data: data.map(p => ({
+          x: getExactScores(p),
+          y: Number(p.points || 0)
+        }))
+      }]
+    },
+    options: {
+      responsive: true,
+      scales: {
+        x: {
+          title: {
+            display: true,
+            text: "Placares exatos"
+          }
+        },
+        y: {
+          title: {
+            display: true,
+            text: "Pontos"
+          }
+        }
+      }
+    }
+  });
+}
+
+function renderPredictionVolumeChart() {
+  const volume = {};
+
+  predictions.forEach(pred => {
+    const name = getParticipantName(pred.participant_id);
+    volume[name] = (volume[name] || 0) + 1;
+  });
+
+  const data = Object.entries(volume)
+    .map(([name, count]) => ({ name, count }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 15);
+
+  createChart("predictionVolumeChart", {
+    type: "bar",
+    data: {
+      labels: data.map(d => d.name),
+      datasets: [{
+        label: "Palpites enviados",
+        data: data.map(d => d.count)
+      }]
+    },
+    options: {
+      indexAxis: "y",
+      responsive: true,
+      plugins: {
+        legend: { display: false }
+      }
+    }
+  });
+}
+
+function renderFinishedGoalsChart() {
+  const finishedMatches = matches.filter(isFinished);
+
+  createChart("finishedGoalsChart", {
+    type: "line",
+    data: {
+      labels: finishedMatches.map(m => `${m.home_team} x ${m.away_team}`),
+      datasets: [{
+        label: "Gols na partida",
+        data: finishedMatches.map(m => Number(m.home_score || 0) + Number(m.away_score || 0))
+      }]
+    },
+    options: {
+      responsive: true
+    }
+  });
+}
+
 async function init() {
   try {
     participants = await fetchCsv(SHEETS.PARTICIPANTS, "CSV_PARTICIPANTS");
@@ -311,6 +544,7 @@ async function init() {
     renderMatches();
     renderPredictions();
     renderStats();
+    renderCharts();
 
     document.getElementById("lastUpdated").innerText =
       new Date().toLocaleString("pt-BR");
