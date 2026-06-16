@@ -104,7 +104,12 @@ function renderHome() {
 function renderRanking() {
   document.getElementById("rankingBody").innerHTML = ranking.map((r, index) => `
     <tr>
-      <td>${index + 1}</td>
+      <td>
+       ${index === 0 ? '🏆' :
+         index === 1 ? '🥈' :
+         index === 2 ? '🥉' :
+         index + 1}
+      </td>
       <td>${r.name || r.nickname || "-"}</td>
       <td>${r.points || 0}</td>
       <td>${r.exact_scores || r.exactScores || 0}</td>
