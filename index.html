@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Bolão Eggbrothers 26</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header class="hero">
+    <div>
+      <p class="eyebrow">Copa do Mundo 2026</p>
+      <h1>Bolão Eggbrothers 26</h1>
+      <p class="subtitle">Ranking, palpites, jogos e estatísticas do bolão.</p>
+    </div>
+
+    <div class="hero-card">
+      <span>Última atualização</span>
+      <strong id="lastUpdated">Carregando...</strong>
+    </div>
+  </header>
+
+  <nav class="nav">
+    <button onclick="showPage('home')">Home</button>
+    <button onclick="showPage('ranking')">Ranking</button>
+    <button onclick="showPage('matches')">Jogos</button>
+    <button onclick="showPage('predictions')">Palpites</button>
+    <button onclick="showPage('stats')">Estatísticas</button>
+  </nav>
+
+  <main>
+    <section id="home" class="page active">
+      <div class="kpi-grid">
+        <div class="kpi">
+          <span>Líder</span>
+          <strong id="leaderName">-</strong>
+          <small id="leaderPoints">- pts</small>
+        </div>
+
+        <div class="kpi">
+          <span>Participantes</span>
+          <strong id="totalParticipants">-</strong>
+          <small>amigos no bolão</small>
+        </div>
+
+        <div class="kpi">
+          <span>Jogos finalizados</span>
+          <strong id="finishedMatches">-</strong>
+          <small>com pontuação calculada</small>
+        </div>
+
+        <div class="kpi">
+          <span>Placares exatos</span>
+          <strong id="exactScores">-</strong>
+          <small>na competição</small>
+        </div>
+      </div>
+
+      <h2>Jogos de hoje</h2>
+      <div id="todayMatches" class="card-list"></div>
+    </section>
+
+    <section id="ranking" class="page">
+      <h2>Ranking geral</h2>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Participante</th>
+              <th>Pontos</th>
+              <th>Exatos</th>
+              <th>Acertos</th>
+            </tr>
+          </thead>
+          <tbody id="rankingBody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="matches" class="page">
+      <h2>Todos os jogos</h2>
+      <div id="matchesList" class="card-list"></div>
+    </section>
+
+    <section id="predictions" class="page">
+      <h2>Palpites</h2>
+      <div id="predictionsList" class="card-list"></div>
+    </section>
+
+    <section id="stats" class="page">
+      <h2>Estatísticas</h2>
+      <div id="statsContent" class="kpi-grid"></div>
+    </section>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>
