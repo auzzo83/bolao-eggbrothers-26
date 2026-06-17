@@ -155,14 +155,32 @@ function getRankPosition(participantId) {
   return idx >= 0 ? idx + 1 : "-";
 }
 
+// ==================== PONTUAÇÃO (COM BÔNUS) ====================
+// Regras:
+//   Jogo normal  → resultado correto = 3pts | placar exato = 5pts
+//   Jogo bônus   → resultado correto = 0pts | placar exato = 10pts
+
+function isPredictionBonus(pred) {
+  return String(pred.is_bonus || "").trim().toLowerCase() === "true";
+}
+
 function scorePrediction(match, pred) {
   if (!match || !isFinished(match)) return 0;
   if (!isFilled(pred.pred_home) || !isFilled(pred.pred_away)) return 0;
+
   const realHome = num(match.home_score);
   const realAway = num(match.away_score);
   const predHome = num(pred.pred_home);
   const predAway = num(pred.pred_away);
-  if (realHome === predHome && realAway === predAway) return 5;
+  const bonus = isPredictionBonus(pred);
+
+  const isExact = realHome === predHome && realAway === predAway;
+
+  if (isExact) return bonus ? 10 : 5;
+
+  // Jogo bônus: só pontua com placar exato
+  if (bonus) return 0;
+
   const realResult = getMatchResult(realHome, realAway);
   const predResult = getMatchResult(predHome, predAway);
   return realResult === predResult ? 3 : 0;
@@ -253,7 +271,6 @@ function buildParticipantModal(participantId) {
   const color = avatarColor(name);
   const initial = getParticipantInitialByName(name);
 
-  // Calcula aproveitamento
   const finishedPreds = myPredictions.filter(p => {
     const m = getMatchById(p.match_id);
     return m && isFinished(m);
@@ -262,31 +279,33 @@ function buildParticipantModal(participantId) {
     const m = getMatchById(p.match_id);
     return sum + scorePrediction(m, p);
   }, 0);
-  const maxPossible = finishedPreds.length * 5;
+  // Aproveitamento: bônus vale 10, então max por aposta bônus = 10, normal = 5
+  const maxPossible = finishedPreds.reduce((sum, p) => sum + (isPredictionBonus(p) ? 10 : 5), 0);
   const aproveitamento = maxPossible > 0 ? Math.round(pointsEarned / maxPossible * 100) : 0;
 
-  // Melhor / pior jogo
   const gameScores = finishedPreds.map(p => {
     const m = getMatchById(p.match_id);
-    return { match: m, score: scorePrediction(m, p) };
+    return { match: m, score: scorePrediction(m, p), bonus: isPredictionBonus(p) };
   }).filter(g => g.match);
 
   const melhorJogo = gameScores.sort((a, b) => b.score - a.score)[0];
-  const piorJogo = [...gameScores].sort((a, b) => a.score - b.score)[0];
   const mediapts = finishedPreds.length > 0 ? (pointsEarned / finishedPreds.length).toFixed(1) : 0;
 
-  // Histórico tabela
   const historicoRows = myPredictions.map(p => {
     const m = getMatchById(p.match_id);
     if (!m) return null;
     const pts = isFinished(m) ? scorePrediction(m, p) : null;
+    const bonus = isPredictionBonus(p);
+    const bonusTag = bonus ? `<span class="pts-badge pts-bonus">⭐ Bônus</span>` : "";
     const ptsLabel = pts === null
       ? `<span class="pts-badge pts-pending">Em aberto</span>`
-      : pts === 5
-        ? `<span class="pts-badge pts-5">+5 pts</span>`
-        : pts === 3
-          ? `<span class="pts-badge pts-3">+3 pts</span>`
-          : `<span class="pts-badge pts-0">+0 pts</span>`;
+      : pts === 10
+        ? `<span class="pts-badge pts-bonus">+10 pts ⭐</span>`
+        : pts === 5
+          ? `<span class="pts-badge pts-5">+5 pts</span>`
+          : pts === 3
+            ? `<span class="pts-badge pts-3">+3 pts</span>`
+            : `<span class="pts-badge pts-0">+0 pts</span>`;
 
     const homeFlag = m.home_flag || "🏳️";
     const awayFlag = m.away_flag || "🏳️";
@@ -294,7 +313,7 @@ function buildParticipantModal(participantId) {
 
     return `
       <tr>
-        <td><span class="match-mini">${homeFlag} ${m.home_team} x ${m.away_team} ${awayFlag}</span></td>
+        <td><span class="match-mini">${homeFlag} ${m.home_team} x ${m.away_team} ${awayFlag}${bonus ? " ⭐" : ""}</span></td>
         <td><strong>${p.pred_home || "?"} - ${p.pred_away || "?"}</strong></td>
         <td>${realScore}</td>
         <td>${ptsLabel}</td>
@@ -347,7 +366,7 @@ function buildParticipantModal(participantId) {
       <div class="modal-insight-card">
         <span>⭐ Melhor Aposta</span>
         <strong>${melhorJogo ? `${melhorJogo.match.home_team} x ${melhorJogo.match.away_team}` : "—"}</strong>
-        <em>${melhorJogo ? `+${melhorJogo.score} pts` : ""}</em>
+        <em>${melhorJogo ? `+${melhorJogo.score} pts${melhorJogo.bonus ? " ⭐ bônus" : ""}` : ""}</em>
       </div>
       <div class="modal-insight-card">
         <span>📊 Média de pontos</span>
@@ -469,16 +488,18 @@ function renderPremiumMatchCard(match) {
       <div class="premium-predictions">
         ${previewPredictions.map(pred => {
           const pts = finished ? scorePrediction(match, pred) : null;
+          const bonus = isPredictionBonus(pred);
           const ptsLabel = pts !== null
-            ? pts === 5 ? `<span class="pts-badge pts-5">+5</span>`
+            ? pts === 10 ? `<span class="pts-badge pts-bonus">+10 ⭐</span>`
+            : pts === 5 ? `<span class="pts-badge pts-5">+5</span>`
             : pts === 3 ? `<span class="pts-badge pts-3">+3</span>`
             : `<span class="pts-badge pts-0">+0</span>`
-            : `<span class="pts-badge pts-pending">🔒</span>`;
+            : bonus ? `<span class="pts-badge pts-bonus">⭐</span>` : `<span class="pts-badge pts-pending">🔒</span>`;
           return `
             <div class="premium-prediction-row">
               ${renderAvatarById(pred.participant_id, 32)}
               <div class="pred-info">
-                <small>${getParticipantName(pred.participant_id)}</small>
+                <small>${getParticipantName(pred.participant_id)}${bonus ? " ⭐" : ""}</small>
                 <strong>${pred.pred_home || "?"} - ${pred.pred_away || "?"}</strong>
               </div>
               ${ptsLabel}
@@ -518,14 +539,21 @@ function renderPremiumMatchCard(match) {
   `;
 }
 
+// ==================== JOGOS BÔNUS ====================
+// Busca match_ids únicos onde algum palpite tem is_bonus = TRUE na aba PREDICTIONS
+
+function getBonusMatchIds() {
+  return [...new Set(
+    predictions
+      .filter(p => isPredictionBonus(p))
+      .map(p => p.match_id)
+  )];
+}
+
 function renderBonusMatches() {
-  let bonus = matches.filter(m => {
-    const value = String(m.bonus_game || m.is_bonus || m.bonus || "").toLowerCase();
-    return ["true", "yes", "sim", "1", "bonus", "bônus"].includes(value);
-  });
-  if (!bonus.length) {
-    bonus = matches.filter(m => isFuture(m) && m.date !== getTodayLocal()).slice(0, 6);
-  }
+  const bonusMatchIds = getBonusMatchIds();
+  const bonus = bonusMatchIds.map(id => getMatchById(id)).filter(Boolean);
+
   setHTML("bonusMatches",
     bonus.length
       ? bonus.map(renderBonusMatchCard).join("")
@@ -537,9 +565,20 @@ function renderBonusMatchCard(match) {
   const homeFlag = match.home_flag || "🏳️";
   const awayFlag = match.away_flag || "🏳️";
   const finished = isFinished(match);
+
+  // Palpites bônus deste jogo
+  const bonusPreds = getPredictionsForMatch(match.match_id).filter(isPredictionBonus);
+  const exactWinners = finished
+    ? bonusPreds.filter(p =>
+        num(p.pred_home) === num(match.home_score) &&
+        num(p.pred_away) === num(match.away_score)
+      ).map(p => getParticipantName(p.participant_id))
+    : [];
+
   return `
     <div class="bonus-card">
       <div class="bonus-card-top">
+        <span class="bonus-badge">⭐ Bônus +10pts</span>
         <span class="bonus-date">${formatDateBR(match.date)}</span>
         <span class="bonus-time">${match.time || "-"}</span>
         <span class="status-pill ${finished ? 'status-done' : 'status-future'}">${finished ? "Finalizado" : "Em breve"}</span>
@@ -558,6 +597,12 @@ function renderBonusMatchCard(match) {
         </div>
       </div>
       ${match.group ? `<div class="bonus-group">${match.group}</div>` : ""}
+      ${finished && exactWinners.length
+        ? `<div class="bonus-winners">🎯 Cravaram: <strong>${exactWinners.join(", ")}</strong></div>`
+        : finished
+          ? `<div class="bonus-winners muted">Ninguém cravou o placar exato.</div>`
+          : `<div class="bonus-winners muted">⭐ Placar exato vale 10 pts neste jogo!</div>`
+      }
     </div>
   `;
 }
@@ -570,7 +615,6 @@ function renderHomeCuriosities() {
   const balanced = getMostBalancedMatch();
   const commonScore = getCommonScore();
 
-  // Melhor aproveitamento
   let bestAproveitamento = null;
   ranking.forEach(r => {
     const name = r.name || r.nickname;
@@ -579,7 +623,7 @@ function renderHomeCuriosities() {
     const myPreds = predictions.filter(p => String(p.participant_id) === String(participantId));
     const finished = myPreds.filter(p => { const m = getMatchById(p.match_id); return m && isFinished(m); });
     const earned = finished.reduce((sum, p) => { const m = getMatchById(p.match_id); return sum + scorePrediction(m, p); }, 0);
-    const max = finished.length * 5;
+    const max = finished.reduce((sum, p) => sum + (isPredictionBonus(p) ? 10 : 5), 0);
     const pct = max > 0 ? Math.round(earned / max * 100) : 0;
     if (!bestAproveitamento || pct > bestAproveitamento.pct) {
       bestAproveitamento = { name, pct };
@@ -725,7 +769,7 @@ function renderRanking() {
     const myPreds = predictions.filter(p => String(p.participant_id) === String(participantId));
     const finishedPreds = myPreds.filter(p => { const m = getMatchById(p.match_id); return m && isFinished(m); });
     const earned = finishedPreds.reduce((sum, p) => { const m = getMatchById(p.match_id); return sum + scorePrediction(m, p); }, 0);
-    const maxP = finishedPreds.length * 5;
+    const maxP = finishedPreds.reduce((sum, p) => sum + (isPredictionBonus(p) ? 10 : 5), 0);
     const aprv = maxP > 0 ? Math.round(earned / maxP * 100) : 0;
     const medal = index === 0 ? "🥇" : index === 1 ? "🥈" : index === 2 ? "🥉" : `${index + 1}`;
     const barWidth = maxPts > 0 ? Math.round(pts / maxPts * 100) : 0;
@@ -772,11 +816,13 @@ function renderMatchCard(match) {
   const homeFlag = match.home_flag || "🏳️";
   const awayFlag = match.away_flag || "🏳️";
   const finished = isFinished(match);
+  const isBonus = getBonusMatchIds().includes(String(match.match_id));
 
   return `
     <div class="match-card ${finished ? 'match-finished' : 'match-future'}">
       <div class="match-card-header">
         <span class="badge ${finished ? 'badge-done' : 'badge-future'}">${finished ? "✅ Finalizado" : "🕐 Futuro"}</span>
+        ${isBonus ? `<span class="badge badge-bonus">⭐ Bônus</span>` : ""}
         <span class="match-card-meta">${formatDateBR(match.date)} · ${match.time || "-"}${match.group ? " · " + match.group : ""}</span>
       </div>
       <div class="match-card-score">
@@ -843,16 +889,19 @@ function renderPredictions() {
 
     const cards = grouped[matchId].map(pred => {
       const pts = scorePrediction(match, pred);
-      const ptsLabel = pts === 5
-        ? `<span class="pts-badge pts-5">+5 pts</span>`
-        : pts === 3
-          ? `<span class="pts-badge pts-3">+3 pts</span>`
-          : `<span class="pts-badge pts-0">+0 pts</span>`;
+      const bonus = isPredictionBonus(pred);
+      const ptsLabel = pts === 10
+        ? `<span class="pts-badge pts-bonus">+10 ⭐</span>`
+        : pts === 5
+          ? `<span class="pts-badge pts-5">+5 pts</span>`
+          : pts === 3
+            ? `<span class="pts-badge pts-3">+3 pts</span>`
+            : `<span class="pts-badge pts-0">+0 pts</span>`;
       return `
         <div class="prediction-row" onclick="openParticipantModal('${pred.participant_id}')">
           ${renderAvatarById(pred.participant_id, 36)}
           <div class="pred-details">
-            <strong>${getParticipantName(pred.participant_id)}</strong>
+            <strong>${getParticipantName(pred.participant_id)}${bonus ? " ⭐" : ""}</strong>
             <span>${match.home_flag || "🏳️"} ${match.home_team} <b>${pred.pred_home}</b> - <b>${pred.pred_away}</b> ${match.away_team} ${match.away_flag || "🏳️"}</span>
           </div>
           ${ptsLabel}
@@ -860,10 +909,13 @@ function renderPredictions() {
       `;
     }).join("");
 
+    const isBonusMatch = grouped[matchId].some(isPredictionBonus);
+
     return `
       <div class="match-card match-finished">
         <div class="match-card-header">
           <span class="badge badge-done">✅ Finalizado</span>
+          ${isBonusMatch ? `<span class="badge badge-bonus">⭐ Bônus</span>` : ""}
           <span class="match-card-meta">${formatDateBR(match.date)}</span>
         </div>
         <div class="match-card-score">
@@ -885,6 +937,7 @@ function renderStats() {
   const totalPredictions = predictions.length;
   const finished = matches.filter(isFinished).length;
   const exactTotal = ranking.reduce((sum, r) => sum + getExactScores(r), 0);
+  const bonusPreds = predictions.filter(isPredictionBonus).length;
 
   setHTML("statsContent", `
     <div class="kpi">
@@ -911,6 +964,11 @@ function renderStats() {
       <span>🔮 Cravadas</span>
       <strong>${exactTotal}</strong>
       <small>placares exatos</small>
+    </div>
+    <div class="kpi">
+      <span>⭐ Palpites Bônus</span>
+      <strong>${bonusPreds}</strong>
+      <small>registrados</small>
     </div>
   `);
 
@@ -1008,6 +1066,9 @@ function getBestPointsGame() {
 function renderComebackTable() {
   const remaining = matches.filter(isFuture).length;
   const leaderPoints = ranking.length ? getPoints(ranking[0]) : 0;
+  // Pontos disponíveis: jogos normais = 5pts max, bônus = 10pts max
+  // Como não sabemos quais dos futuros serão bônus para cada participante,
+  // usamos o máximo possível por jogo futuro (conservador: 5pts)
   setHTML("comebackTable", `
     <table>
       <thead>
