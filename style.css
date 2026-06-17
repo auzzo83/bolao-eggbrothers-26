@@ -462,6 +462,42 @@ main { padding: 32px 48px 80px; max-width: 1400px; margin: 0 auto; }
 .bonus-score { font-size: 20px; font-weight: 900; color: var(--green); font-family: 'Space Grotesk', Inter, sans-serif; }
 .bonus-group { color: var(--muted); font-size: 12px; text-align: right; margin-top: 10px; }
 
+/* Badge bônus */
+.pts-bonus {
+  background: rgba(250,204,21,.18);
+  color: var(--gold);
+  border: 1px solid rgba(250,204,21,.45);
+}
+
+.badge-bonus {
+  background: rgba(250,204,21,.12);
+  color: var(--gold);
+  border: 1px solid rgba(250,204,21,.35);
+}
+
+/* Rodapé do bonus card */
+.bonus-badge {
+  background: rgba(250,204,21,.12);
+  color: var(--gold);
+  border: 1px solid rgba(250,204,21,.35);
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.bonus-winners {
+  margin-top: 12px;
+  font-size: 13px;
+  color: var(--green);
+  border-top: 1px solid rgba(255,255,255,.06);
+  padding-top: 10px;
+}
+
+.bonus-winners.muted {
+  color: var(--muted);
+}
+
 /* ==================== CURIOSIDADES ==================== */
 
 .curiosity-grid {
