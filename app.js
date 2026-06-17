@@ -15,6 +15,7 @@ let predictions = [];
 let ranking = [];
 let charts = {};
 let currentMatchFilter = "all";
+let rankingSearch = "";
 
 // ==================== PROXY / FETCH ====================
 
@@ -121,9 +122,56 @@ function getParticipantInitial(participantId) {
   return String(source || "?").trim().charAt(0).toUpperCase();
 }
 
-function getExactScores(row) { return num(row.exact_scores || row.exactScores); }
-function getCorrectResults(row) { return num(row.correct_results || row.correctResults); }
+// ==================== PONTUAÇÃO RECALCULADA LOCALMENTE ====================
+// FIX: Não depender da planilha para exact_scores / correct_results.
+// Tudo é recalculado via scorePrediction() a partir dos dados reais.
+
 function getPoints(row) { return num(row.points); }
+
+// Recalcula exatos para um participante a partir dos palpites e jogos
+function calcExactScores(participantId) {
+  return predictions.filter(p => String(p.participant_id) === String(participantId)).reduce((sum, p) => {
+    const m = getMatchById(p.match_id);
+    if (!m || !isFinished(m)) return sum;
+    const pts = scorePrediction(m, p);
+    return sum + (pts === 5 || pts === 10 ? 1 : 0);
+  }, 0);
+}
+
+// Recalcula resultados corretos (acertou resultado mas não placar exato) + placares exatos normais
+// correct_results = total de apostas que acertaram resultado (incluindo exatos), exceto bônus (bônus só conta exato)
+function calcCorrectResults(participantId) {
+  return predictions.filter(p => String(p.participant_id) === String(participantId)).reduce((sum, p) => {
+    const m = getMatchById(p.match_id);
+    if (!m || !isFinished(m)) return sum;
+    const pts = scorePrediction(m, p);
+    // Conta se acertou resultado (3pts) OU placar exato normal (5pts)
+    return sum + (pts === 3 || pts === 5 ? 1 : 0);
+  }, 0);
+}
+
+// Retorna o total de pontos calculado localmente (para validação / fallback)
+function calcTotalPoints(participantId) {
+  return predictions.filter(p => String(p.participant_id) === String(participantId)).reduce((sum, p) => {
+    const m = getMatchById(p.match_id);
+    if (!m) return sum;
+    return sum + scorePrediction(m, p);
+  }, 0);
+}
+
+// Aproveitamento: pontos ganhos / pontos possíveis
+function calcAproveitamento(participantId) {
+  const myPreds = predictions.filter(p => String(p.participant_id) === String(participantId));
+  const finished = myPreds.filter(p => { const m = getMatchById(p.match_id); return m && isFinished(m); });
+  const earned = finished.reduce((sum, p) => { const m = getMatchById(p.match_id); return sum + scorePrediction(m, p); }, 0);
+  const max = finished.reduce((sum, p) => sum + (isPredictionBonus(p) ? 10 : 5), 0);
+  return max > 0 ? Math.round(earned / max * 100) : 0;
+}
+
+function getParticipantIdByName(name) {
+  const p = participants.find(p => (p.name || p.nickname) === name);
+  return p ? p.participant_id : null;
+}
 
 function getTodayLocal() {
   const now = new Date();
@@ -219,7 +267,7 @@ function avatarColor(name) {
 function renderAvatar(name, size = 34) {
   const color = avatarColor(name);
   const initial = getParticipantInitialByName(name);
-  return `<div class="avatar" style="width:${size}px;height:${size}px;background:${color};font-size:${Math.round(size*0.45)}px">${initial}</div>`;
+  return `<div class="avatar" style="width:${size}px;height:${size}px;background:${color};font-size:${Math.round(size*0.45)}px" title="${name}">${initial}</div>`;
 }
 
 function renderAvatarById(participantId, size = 34) {
@@ -234,7 +282,13 @@ function showPage(pageId, btn) {
   document.getElementById(pageId).classList.add("active");
   document.querySelectorAll(".nav-btn").forEach(b => b.classList.remove("active"));
   if (btn) btn.classList.add("active");
+  window.scrollTo({ top: 0, behavior: "smooth" });
   if (pageId === "charts") setTimeout(renderCharts, 100);
+}
+
+function goToPage(pageId) {
+  const btn = document.querySelector(`.nav-btn[onclick*="'${pageId}'"]`);
+  showPage(pageId, btn);
 }
 
 // ==================== DOM HELPERS ====================
@@ -262,9 +316,11 @@ function buildParticipantModal(participantId) {
   const name = getParticipantName(participantId);
   const rankRow = ranking.find(r => (r.name || r.nickname) === name);
   const position = getRankPosition(participantId);
-  const pts = rankRow ? getPoints(rankRow) : 0;
-  const exatos = rankRow ? getExactScores(rankRow) : 0;
-  const corretos = rankRow ? getCorrectResults(rankRow) : 0;
+  const pts = rankRow ? getPoints(rankRow) : calcTotalPoints(participantId);
+
+  // FIX: usa recálculo local para exatos e corretos
+  const exatos = calcExactScores(participantId);
+  const corretos = calcCorrectResults(participantId);
 
   const myPredictions = predictions.filter(p => String(p.participant_id) === String(participantId));
   const apostas = myPredictions.length;
@@ -279,40 +335,53 @@ function buildParticipantModal(participantId) {
     const m = getMatchById(p.match_id);
     return sum + scorePrediction(m, p);
   }, 0);
-  // Aproveitamento: bônus vale 10, então max por aposta bônus = 10, normal = 5
   const maxPossible = finishedPreds.reduce((sum, p) => sum + (isPredictionBonus(p) ? 10 : 5), 0);
   const aproveitamento = maxPossible > 0 ? Math.round(pointsEarned / maxPossible * 100) : 0;
 
   const gameScores = finishedPreds.map(p => {
     const m = getMatchById(p.match_id);
-    return { match: m, score: scorePrediction(m, p), bonus: isPredictionBonus(p) };
+    return { match: m, pred: p, score: scorePrediction(m, p), bonus: isPredictionBonus(p) };
   }).filter(g => g.match);
 
-  const melhorJogo = gameScores.sort((a, b) => b.score - a.score)[0];
+  const melhorJogo = [...gameScores].sort((a, b) => b.score - a.score)[0];
   const mediapts = finishedPreds.length > 0 ? (pointsEarned / finishedPreds.length).toFixed(1) : 0;
 
-  const historicoRows = myPredictions.map(p => {
+  // Ordenar: finalizados primeiro (por data desc), depois futuros
+  const sortedPreds = [...myPredictions].sort((a, b) => {
+    const ma = getMatchById(a.match_id);
+    const mb = getMatchById(b.match_id);
+    const fa = ma && isFinished(ma) ? 1 : 0;
+    const fb = mb && isFinished(mb) ? 1 : 0;
+    if (fa !== fb) return fb - fa;
+    return (mb?.date || "") > (ma?.date || "") ? 1 : -1;
+  });
+
+  const historicoRows = sortedPreds.map(p => {
     const m = getMatchById(p.match_id);
     if (!m) return null;
     const pts = isFinished(m) ? scorePrediction(m, p) : null;
     const bonus = isPredictionBonus(p);
-    const bonusTag = bonus ? `<span class="pts-badge pts-bonus">⭐ Bônus</span>` : "";
-    const ptsLabel = pts === null
-      ? `<span class="pts-badge pts-pending">Em aberto</span>`
-      : pts === 10
-        ? `<span class="pts-badge pts-bonus">+10 pts ⭐</span>`
-        : pts === 5
-          ? `<span class="pts-badge pts-5">+5 pts</span>`
-          : pts === 3
-            ? `<span class="pts-badge pts-3">+3 pts</span>`
-            : `<span class="pts-badge pts-0">+0 pts</span>`;
-
     const homeFlag = m.home_flag || "🏳️";
     const awayFlag = m.away_flag || "🏳️";
     const realScore = isFinished(m) ? `${m.home_score} - ${m.away_score}` : `—`;
 
+    let ptsLabel;
+    if (pts === null) {
+      ptsLabel = `<span class="pts-badge pts-pending">Em aberto</span>`;
+    } else if (pts === 10) {
+      ptsLabel = `<span class="pts-badge pts-bonus">+10 ⭐</span>`;
+    } else if (pts === 5) {
+      ptsLabel = `<span class="pts-badge pts-5">+5 pts 🎯</span>`;
+    } else if (pts === 3) {
+      ptsLabel = `<span class="pts-badge pts-3">+3 pts ✅</span>`;
+    } else {
+      ptsLabel = `<span class="pts-badge pts-0">+0 pts</span>`;
+    }
+
+    const rowClass = pts === 5 || pts === 10 ? "row-exact" : pts === 3 ? "row-correct" : pts === 0 && isFinished(m) ? "row-miss" : "";
+
     return `
-      <tr>
+      <tr class="${rowClass}" onclick="openMatchModal('${m.match_id}')" style="cursor:pointer">
         <td><span class="match-mini">${homeFlag} ${m.home_team} x ${m.away_team} ${awayFlag}${bonus ? " ⭐" : ""}</span></td>
         <td><strong>${p.pred_home || "?"} - ${p.pred_away || "?"}</strong></td>
         <td>${realScore}</td>
@@ -340,12 +409,12 @@ function buildParticipantModal(participantId) {
         <span>Pontos</span>
         <strong>${pts}</strong>
       </div>
-      <div class="modal-kpi">
-        <span>Placares Exatos</span>
+      <div class="modal-kpi kpi-exact">
+        <span>🎯 Exatos</span>
         <strong>${exatos}</strong>
       </div>
-      <div class="modal-kpi">
-        <span>Resultados</span>
+      <div class="modal-kpi kpi-correct">
+        <span>✅ Resultados</span>
         <strong>${corretos}</strong>
       </div>
       <div class="modal-kpi">
@@ -360,6 +429,12 @@ function buildParticipantModal(participantId) {
         <span>Média/Jogo</span>
         <strong>${mediapts}</strong>
       </div>
+    </div>
+
+    <div class="modal-score-legend">
+      <span class="legend-item"><span class="pts-badge pts-5">+5</span> Placar exato</span>
+      <span class="legend-item"><span class="pts-badge pts-3">+3</span> Resultado certo</span>
+      <span class="legend-item"><span class="pts-badge pts-bonus">+10 ⭐</span> Bônus exato</span>
     </div>
 
     <div class="modal-insights">
@@ -387,12 +462,134 @@ function buildParticipantModal(participantId) {
   `;
 }
 
+// ==================== MODAL JOGO ====================
+
+function openMatchModal(matchId) {
+  // Fecha modal de participante se aberto
+  document.getElementById("participantModal").classList.remove("open");
+
+  const modal = document.getElementById("matchModal");
+  const content = document.getElementById("matchModalContent");
+  content.innerHTML = buildMatchModal(matchId);
+  modal.classList.add("open");
+  document.body.style.overflow = "hidden";
+}
+
+function closeMatchModal(event) {
+  if (event && event.target !== document.getElementById("matchModal") && !event.target.classList.contains("modal-close")) return;
+  document.getElementById("matchModal").classList.remove("open");
+  document.body.style.overflow = "";
+}
+
+function buildMatchModal(matchId) {
+  const match = getMatchById(matchId);
+  if (!match) return "<p>Jogo não encontrado.</p>";
+
+  const preds = getPredictionsForMatch(matchId);
+  const finished = isFinished(match);
+  const homeFlag = match.home_flag || "🏳️";
+  const awayFlag = match.away_flag || "🏳️";
+  const stats = getPredictionResultStats(match);
+  const isBonus = getBonusMatchIds().includes(String(matchId));
+
+  const predRows = preds.map(pred => {
+    const pts = finished ? scorePrediction(match, pred) : null;
+    const bonus = isPredictionBonus(pred);
+    const name = getParticipantName(pred.participant_id);
+    let ptsLabel;
+    if (pts === null) {
+      ptsLabel = bonus ? `<span class="pts-badge pts-bonus">⭐ Bônus</span>` : `<span class="pts-badge pts-pending">🔒</span>`;
+    } else if (pts === 10) {
+      ptsLabel = `<span class="pts-badge pts-bonus">+10 ⭐</span>`;
+    } else if (pts === 5) {
+      ptsLabel = `<span class="pts-badge pts-5">+5 🎯</span>`;
+    } else if (pts === 3) {
+      ptsLabel = `<span class="pts-badge pts-3">+3 ✅</span>`;
+    } else {
+      ptsLabel = `<span class="pts-badge pts-0">+0</span>`;
+    }
+
+    const rowClass = pts === 5 || pts === 10 ? "row-exact" : pts === 3 ? "row-correct" : pts === 0 && finished ? "row-miss" : "";
+
+    return `
+      <div class="match-pred-row ${rowClass}" onclick="openParticipantModal('${pred.participant_id}')">
+        ${renderAvatar(name, 36)}
+        <div class="pred-info">
+          <strong>${name}${bonus ? " ⭐" : ""}</strong>
+          <span>${pred.pred_home || "?"} – ${pred.pred_away || "?"}</span>
+        </div>
+        ${ptsLabel}
+      </div>
+    `;
+  }).join("");
+
+  return `
+    <div class="match-modal-header">
+      ${isBonus ? `<span class="bonus-badge">⭐ Jogo Bônus</span>` : ""}
+      <span class="match-modal-date">${formatDateBR(match.date)} · ${match.time || ""}</span>
+      ${match.group ? `<span class="match-modal-group">${match.group}</span>` : ""}
+    </div>
+
+    <div class="match-modal-score">
+      <div class="match-modal-team">
+        <span class="match-modal-flag">${homeFlag}</span>
+        <strong>${match.home_team}</strong>
+      </div>
+      <div class="match-modal-result">
+        ${finished
+          ? `<span class="match-modal-scoreline">${match.home_score} – ${match.away_score}</span><span class="match-modal-status done">✅ Finalizado</span>`
+          : `<span class="match-modal-vs">VS</span><span class="match-modal-status future">Em breve</span>`
+        }
+      </div>
+      <div class="match-modal-team">
+        <span class="match-modal-flag">${awayFlag}</span>
+        <strong>${match.away_team}</strong>
+      </div>
+    </div>
+
+    ${finished ? `
+    <div class="match-modal-consensus">
+      <small>Consenso do bolão</small>
+      <div class="majority-bar">
+        <div style="width:${stats.homePct}%"></div>
+        <div style="width:${stats.drawPct}%"></div>
+        <div style="width:${stats.awayPct}%"></div>
+      </div>
+      <div class="majority-stats">
+        <div class="majority-item home-item">
+          <span>${match.home_team}</span>
+          <strong>${stats.homePct}%</strong>
+          <em>${stats.home} votos</em>
+        </div>
+        <div class="majority-item draw-item">
+          <span>Empate</span>
+          <strong>${stats.drawPct}%</strong>
+          <em>${stats.draw} votos</em>
+        </div>
+        <div class="majority-item away-item">
+          <span>${match.away_team}</span>
+          <strong>${stats.awayPct}%</strong>
+          <em>${stats.away} votos</em>
+        </div>
+      </div>
+    </div>
+    ` : ""}
+
+    <h3 class="modal-section-title">🎯 Palpites dos Participantes</h3>
+    <div class="match-preds-list">
+      ${predRows || `<div class="empty-state">Sem palpites cadastrados.</div>`}
+    </div>
+  `;
+}
+
 // ==================== HOME ====================
 
 function renderHome() {
   const leader = ranking[0];
   const finished = matches.filter(isFinished).length;
-  const exactTotal = ranking.reduce((sum, r) => sum + getExactScores(r), 0);
+
+  // FIX: recalcula exactTotal localmente
+  const exactTotal = participants.reduce((sum, p) => sum + calcExactScores(p.participant_id), 0);
   const liveMatches = matches.filter(m => String(m.status || "").toLowerCase() === "live");
 
   setText("leaderName", leader ? leader.name || leader.nickname || "-" : "-");
@@ -419,10 +616,11 @@ function renderPodium() {
     const color = avatarColor(name);
     const initial = getParticipantInitialByName(name);
     const pts = getPoints(p);
-    const exatos = getExactScores(p);
+    // FIX: recalcula exatos localmente
+    const exatos = calcExactScores(p.participant_id);
     const participantId = p.participant_id;
     return `
-      <div class="podium-card ${i === 0 ? 'podium-first' : ''}" onclick="openParticipantModal('${participantId}')">
+      <div class="podium-card ${i === 0 ? 'podium-first' : ''}" onclick="openParticipantModal('${participantId}')" title="Ver detalhes de ${name}">
         <div class="podium-medal">${medals[i]}</div>
         <div class="podium-avatar" style="background:${color};transform:scale(${sizes[i]})">${initial}</div>
         <div class="podium-label">${labels[i]}</div>
@@ -455,7 +653,7 @@ function renderPremiumMatchCard(match) {
   const finished = isFinished(match);
 
   return `
-    <div class="premium-match-card ${finished ? 'finished' : ''}">
+    <div class="premium-match-card ${finished ? 'finished' : ''}" onclick="openMatchModal('${match.match_id}')" style="cursor:pointer" title="Ver todos os palpites">
       <div class="premium-match-head">
         <div class="match-meta-left">
           <span class="match-num">${matchNum}</span>
@@ -491,8 +689,8 @@ function renderPremiumMatchCard(match) {
           const bonus = isPredictionBonus(pred);
           const ptsLabel = pts !== null
             ? pts === 10 ? `<span class="pts-badge pts-bonus">+10 ⭐</span>`
-            : pts === 5 ? `<span class="pts-badge pts-5">+5</span>`
-            : pts === 3 ? `<span class="pts-badge pts-3">+3</span>`
+            : pts === 5 ? `<span class="pts-badge pts-5">+5 🎯</span>`
+            : pts === 3 ? `<span class="pts-badge pts-3">+3 ✅</span>`
             : `<span class="pts-badge pts-0">+0</span>`
             : bonus ? `<span class="pts-badge pts-bonus">⭐</span>` : `<span class="pts-badge pts-pending">🔒</span>`;
           return `
@@ -506,7 +704,7 @@ function renderPremiumMatchCard(match) {
             </div>
           `;
         }).join("")}
-        ${allPreds.length > 3 ? `<div class="more-preds">+${allPreds.length - 3} mais apostadores</div>` : ""}
+        ${allPreds.length > 3 ? `<div class="more-preds" onclick="openMatchModal('${match.match_id}');event.stopPropagation()">+${allPreds.length - 3} mais → ver todos</div>` : ""}
       </div>
       ` : `<div class="no-preds">Sem palpites cadastrados.</div>`}
 
@@ -540,7 +738,6 @@ function renderPremiumMatchCard(match) {
 }
 
 // ==================== JOGOS BÔNUS ====================
-// Busca match_ids únicos onde algum palpite tem is_bonus = TRUE na aba PREDICTIONS
 
 function getBonusMatchIds() {
   return [...new Set(
@@ -566,7 +763,6 @@ function renderBonusMatchCard(match) {
   const awayFlag = match.away_flag || "🏳️";
   const finished = isFinished(match);
 
-  // Palpites bônus deste jogo
   const bonusPreds = getPredictionsForMatch(match.match_id).filter(isPredictionBonus);
   const exactWinners = finished
     ? bonusPreds.filter(p =>
@@ -576,7 +772,7 @@ function renderBonusMatchCard(match) {
     : [];
 
   return `
-    <div class="bonus-card">
+    <div class="bonus-card" onclick="openMatchModal('${match.match_id}')" style="cursor:pointer" title="Ver palpites deste jogo">
       <div class="bonus-card-top">
         <span class="bonus-badge">⭐ Bônus +10pts</span>
         <span class="bonus-date">${formatDateBR(match.date)}</span>
@@ -608,8 +804,16 @@ function renderBonusMatchCard(match) {
 }
 
 function renderHomeCuriosities() {
-  const topExato = [...ranking].sort((a, b) => getExactScores(b) - getExactScores(a))[0];
-  const topCorrect = [...ranking].sort((a, b) => getCorrectResults(b) - getCorrectResults(a))[0];
+  const topExato = [...ranking].map(r => ({
+    ...r,
+    _exatos: calcExactScores(r.participant_id || getParticipantIdByName(r.name || r.nickname))
+  })).sort((a, b) => b._exatos - a._exatos)[0];
+
+  const topCorrect = [...ranking].map(r => ({
+    ...r,
+    _corretos: calcCorrectResults(r.participant_id || getParticipantIdByName(r.name || r.nickname))
+  })).sort((a, b) => b._corretos - a._corretos)[0];
+
   const topPredictions = getTopPredictionVolume();
   const consensus = getHighestConsensus();
   const balanced = getMostBalancedMatch();
@@ -618,15 +822,11 @@ function renderHomeCuriosities() {
   let bestAproveitamento = null;
   ranking.forEach(r => {
     const name = r.name || r.nickname;
-    const participantId = participants.find(p => (p.name || p.nickname) === name)?.participant_id;
+    const participantId = r.participant_id || getParticipantIdByName(name);
     if (!participantId) return;
-    const myPreds = predictions.filter(p => String(p.participant_id) === String(participantId));
-    const finished = myPreds.filter(p => { const m = getMatchById(p.match_id); return m && isFinished(m); });
-    const earned = finished.reduce((sum, p) => { const m = getMatchById(p.match_id); return sum + scorePrediction(m, p); }, 0);
-    const max = finished.reduce((sum, p) => sum + (isPredictionBonus(p) ? 10 : 5), 0);
-    const pct = max > 0 ? Math.round(earned / max * 100) : 0;
+    const pct = calcAproveitamento(participantId);
     if (!bestAproveitamento || pct > bestAproveitamento.pct) {
-      bestAproveitamento = { name, pct };
+      bestAproveitamento = { name, pct, participantId };
     }
   });
 
@@ -634,29 +834,29 @@ function renderHomeCuriosities() {
 
   setHTML("homeCuriosities", `
     ${topExato ? `
-    <div class="curiosity-card curiosity-gold" onclick="openParticipantModal('${participants.find(p=>(p.name||p.nickname)===(topExato.name||topExato.nickname))?.participant_id||''}')">
+    <div class="curiosity-card curiosity-gold" onclick="openParticipantModal('${topExato.participant_id || getParticipantIdByName(topExato.name || topExato.nickname) || ''}')">
       <div class="curiosity-icon">🎯</div>
       <div>
         <span>Maior Cravador</span>
         <strong>${topExato.name || topExato.nickname}</strong>
-        <b>${getExactScores(topExato)}</b>
+        <b>${topExato._exatos}</b>
         <small>placares exatos</small>
       </div>
     </div>` : ""}
 
     ${topCorrect ? `
-    <div class="curiosity-card curiosity-blue" onclick="openParticipantModal('${participants.find(p=>(p.name||p.nickname)===(topCorrect.name||topCorrect.nickname))?.participant_id||''}')">
+    <div class="curiosity-card curiosity-blue" onclick="openParticipantModal('${topCorrect.participant_id || getParticipantIdByName(topCorrect.name || topCorrect.nickname) || ''}')">
       <div class="curiosity-icon">✅</div>
       <div>
         <span>Rei do Resultado</span>
         <strong>${topCorrect.name || topCorrect.nickname}</strong>
-        <b>${getCorrectResults(topCorrect)}</b>
+        <b>${topCorrect._corretos}</b>
         <small>resultados corretos</small>
       </div>
     </div>` : ""}
 
     ${bestAproveitamento ? `
-    <div class="curiosity-card curiosity-green">
+    <div class="curiosity-card curiosity-green" onclick="openParticipantModal('${bestAproveitamento.participantId || ''}')">
       <div class="curiosity-icon">📈</div>
       <div>
         <span>Melhor Aproveitamento</span>
@@ -667,7 +867,7 @@ function renderHomeCuriosities() {
     </div>` : ""}
 
     ${topPredictions ? `
-    <div class="curiosity-card curiosity-purple">
+    <div class="curiosity-card curiosity-purple" onclick="openParticipantModal('${topPredictions.participantId}')">
       <div class="curiosity-icon">📝</div>
       <div>
         <span>Mais Apostas</span>
@@ -678,7 +878,7 @@ function renderHomeCuriosities() {
     </div>` : ""}
 
     ${zebra ? `
-    <div class="curiosity-card curiosity-red">
+    <div class="curiosity-card curiosity-red" onclick="openMatchModal('${zebra.match.match_id}')">
       <div class="curiosity-icon">🦓</div>
       <div>
         <span>Zebra do Bolão</span>
@@ -689,7 +889,7 @@ function renderHomeCuriosities() {
     </div>` : ""}
 
     ${balanced ? `
-    <div class="curiosity-card curiosity-orange">
+    <div class="curiosity-card curiosity-orange" onclick="openMatchModal('${balanced.match.match_id}')">
       <div class="curiosity-icon">⚖️</div>
       <div>
         <span>Jogo Mais Disputado</span>
@@ -709,6 +909,26 @@ function renderHomeCuriosities() {
         <small>${commonScore.names}</small>
       </div>
     </div>` : ""}
+
+    <div class="curiosity-card curiosity-nav" onclick="goToPage('ranking')">
+      <div class="curiosity-icon">🏆</div>
+      <div>
+        <span>Ver</span>
+        <strong>Ranking Completo</strong>
+        <b>→</b>
+        <small>${ranking.length} participantes</small>
+      </div>
+    </div>
+
+    <div class="curiosity-card curiosity-nav" onclick="goToPage('matches')">
+      <div class="curiosity-icon">⚽</div>
+      <div>
+        <span>Ver</span>
+        <strong>Todos os Jogos</strong>
+        <b>→</b>
+        <small>${matches.length} jogos</small>
+      </div>
+    </div>
   `);
 }
 
@@ -758,23 +978,32 @@ function getCommonScore() {
 
 // ==================== RANKING ====================
 
+function filterRanking(query) {
+  rankingSearch = query.toLowerCase();
+  renderRanking();
+}
+
 function renderRanking() {
   const maxPts = ranking.length ? getPoints(ranking[0]) : 1;
-  setHTML("rankingBody", ranking.map((r, index) => {
+  const filtered = rankingSearch
+    ? ranking.filter(r => (r.name || r.nickname || "").toLowerCase().includes(rankingSearch))
+    : ranking;
+
+  setHTML("rankingBody", filtered.map((r, index) => {
     const name = r.name || r.nickname || "-";
     const pts = getPoints(r);
-    const exatos = getExactScores(r);
-    const corretos = getCorrectResults(r);
-    const participantId = r.participant_id || participants.find(p => (p.name || p.nickname) === name)?.participant_id;
-    const myPreds = predictions.filter(p => String(p.participant_id) === String(participantId));
-    const finishedPreds = myPreds.filter(p => { const m = getMatchById(p.match_id); return m && isFinished(m); });
-    const earned = finishedPreds.reduce((sum, p) => { const m = getMatchById(p.match_id); return sum + scorePrediction(m, p); }, 0);
-    const maxP = finishedPreds.reduce((sum, p) => sum + (isPredictionBonus(p) ? 10 : 5), 0);
-    const aprv = maxP > 0 ? Math.round(earned / maxP * 100) : 0;
-    const medal = index === 0 ? "🥇" : index === 1 ? "🥈" : index === 2 ? "🥉" : `${index + 1}`;
+    const participantId = r.participant_id || getParticipantIdByName(name);
+
+    // FIX: recalcula exatos e corretos localmente
+    const exatos = calcExactScores(participantId);
+    const corretos = calcCorrectResults(participantId);
+    const aprv = calcAproveitamento(participantId);
+
+    const globalIndex = ranking.indexOf(r);
+    const medal = globalIndex === 0 ? "🥇" : globalIndex === 1 ? "🥈" : globalIndex === 2 ? "🥉" : `${globalIndex + 1}`;
     const barWidth = maxPts > 0 ? Math.round(pts / maxPts * 100) : 0;
     return `
-      <tr class="ranking-row ${index < 3 ? 'top-row' : ''}" onclick="openParticipantModal('${participantId}')">
+      <tr class="ranking-row ${globalIndex < 3 ? 'top-row' : ''}" onclick="openParticipantModal('${participantId}')" title="Ver detalhes de ${name}">
         <td class="rank-pos">${medal}</td>
         <td>
           <div class="table-player">
@@ -791,7 +1020,7 @@ function renderRanking() {
         <td><span class="aprv-pill">${aprv}%</span></td>
       </tr>
     `;
-  }).join(""));
+  }).join("") || `<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:24px">Nenhum participante encontrado.</td></tr>`);
 }
 
 // ==================== JOGOS ====================
@@ -819,7 +1048,7 @@ function renderMatchCard(match) {
   const isBonus = getBonusMatchIds().includes(String(match.match_id));
 
   return `
-    <div class="match-card ${finished ? 'match-finished' : 'match-future'}">
+    <div class="match-card ${finished ? 'match-finished' : 'match-future'}" onclick="openMatchModal('${match.match_id}')" style="cursor:pointer" title="Ver palpites deste jogo">
       <div class="match-card-header">
         <span class="badge ${finished ? 'badge-done' : 'badge-future'}">${finished ? "✅ Finalizado" : "🕐 Futuro"}</span>
         ${isBonus ? `<span class="badge badge-bonus">⭐ Bônus</span>` : ""}
@@ -867,7 +1096,16 @@ function renderPredictions() {
     grouped[pred.match_id].push(pred);
   });
 
-  setHTML("predictionsList", Object.keys(grouped).map(matchId => {
+  // Ordenar: finalizados primeiro
+  const sortedMatchIds = Object.keys(grouped).sort((a, b) => {
+    const ma = getMatchById(a);
+    const mb = getMatchById(b);
+    const fa = ma && isFinished(ma) ? 1 : 0;
+    const fb = mb && isFinished(mb) ? 1 : 0;
+    return fb - fa;
+  });
+
+  setHTML("predictionsList", sortedMatchIds.map(matchId => {
     const match = getMatchById(matchId);
     if (!match) return "";
 
@@ -887,18 +1125,22 @@ function renderPredictions() {
       `;
     }
 
+    const isBonusMatch = grouped[matchId].some(isPredictionBonus);
+    const totalMatchPts = grouped[matchId].reduce((sum, p) => sum + scorePrediction(match, p), 0);
+
     const cards = grouped[matchId].map(pred => {
       const pts = scorePrediction(match, pred);
       const bonus = isPredictionBonus(pred);
-      const ptsLabel = pts === 10
-        ? `<span class="pts-badge pts-bonus">+10 ⭐</span>`
-        : pts === 5
-          ? `<span class="pts-badge pts-5">+5 pts</span>`
-          : pts === 3
-            ? `<span class="pts-badge pts-3">+3 pts</span>`
-            : `<span class="pts-badge pts-0">+0 pts</span>`;
+      let ptsLabel;
+      if (pts === 10) ptsLabel = `<span class="pts-badge pts-bonus">+10 ⭐</span>`;
+      else if (pts === 5) ptsLabel = `<span class="pts-badge pts-5">+5 🎯</span>`;
+      else if (pts === 3) ptsLabel = `<span class="pts-badge pts-3">+3 ✅</span>`;
+      else ptsLabel = `<span class="pts-badge pts-0">+0 pts</span>`;
+
+      const rowClass = pts === 5 || pts === 10 ? "row-exact" : pts === 3 ? "row-correct" : "row-miss";
+
       return `
-        <div class="prediction-row" onclick="openParticipantModal('${pred.participant_id}')">
+        <div class="prediction-row ${rowClass}" onclick="openParticipantModal('${pred.participant_id}')">
           ${renderAvatarById(pred.participant_id, 36)}
           <div class="pred-details">
             <strong>${getParticipantName(pred.participant_id)}${bonus ? " ⭐" : ""}</strong>
@@ -909,14 +1151,13 @@ function renderPredictions() {
       `;
     }).join("");
 
-    const isBonusMatch = grouped[matchId].some(isPredictionBonus);
-
     return `
       <div class="match-card match-finished">
         <div class="match-card-header">
           <span class="badge badge-done">✅ Finalizado</span>
           ${isBonusMatch ? `<span class="badge badge-bonus">⭐ Bônus</span>` : ""}
           <span class="match-card-meta">${formatDateBR(match.date)}</span>
+          <span class="match-total-pts">${totalMatchPts} pts gerados</span>
         </div>
         <div class="match-card-score">
           <span>${match.home_flag || "🏳️"} ${match.home_team}</span>
@@ -936,8 +1177,16 @@ function renderStats() {
   const avgPoints = ranking.length ? Math.round(totalPoints / ranking.length) : 0;
   const totalPredictions = predictions.length;
   const finished = matches.filter(isFinished).length;
-  const exactTotal = ranking.reduce((sum, r) => sum + getExactScores(r), 0);
+
+  // FIX: recalcula exatos localmente
+  const exactTotal = participants.reduce((sum, p) => sum + calcExactScores(p.participant_id), 0);
   const bonusPreds = predictions.filter(isPredictionBonus).length;
+
+  // Conta resultados simples (3pts)
+  const correctResults3pts = predictions.filter(p => {
+    const m = getMatchById(p.match_id);
+    return m && isFinished(m) && scorePrediction(m, p) === 3;
+  }).length;
 
   setHTML("statsContent", `
     <div class="kpi">
@@ -960,10 +1209,15 @@ function renderStats() {
       <strong>${finished}</strong>
       <small>com resultado</small>
     </div>
-    <div class="kpi">
-      <span>🔮 Cravadas</span>
+    <div class="kpi kpi-exact-stat">
+      <span>🎯 Placares Exatos</span>
       <strong>${exactTotal}</strong>
-      <small>placares exatos</small>
+      <small>cravadas (+5/+10 pts)</small>
+    </div>
+    <div class="kpi kpi-correct-stat">
+      <span>✅ Resultados Certos</span>
+      <strong>${correctResults3pts}</strong>
+      <small>resultado sem placar (+3 pts)</small>
     </div>
     <div class="kpi">
       <span>⭐ Palpites Bônus</span>
@@ -978,23 +1232,30 @@ function renderStats() {
 }
 
 function renderAccuracyBoards() {
-  const exact = [...ranking].sort((a, b) => getExactScores(b) - getExactScores(a)).slice(0, 8);
-  const simple = [...ranking].sort((a, b) => getCorrectResults(b) - getCorrectResults(a)).slice(0, 8);
-  const maxExact = exact.length ? getExactScores(exact[0]) : 1;
-  const maxSimple = simple.length ? getCorrectResults(simple[0]) : 1;
+  // FIX: ordena por recálculo local
+  const byExact = [...participants].map(p => ({
+    participantId: p.participant_id,
+    name: p.name || p.nickname || "-",
+    value: calcExactScores(p.participant_id)
+  })).sort((a, b) => b.value - a.value).slice(0, 8);
+
+  const byCorrect = [...participants].map(p => ({
+    participantId: p.participant_id,
+    name: p.name || p.nickname || "-",
+    value: calcCorrectResults(p.participant_id)
+  })).sort((a, b) => b.value - a.value).slice(0, 8);
+
+  const maxExact = byExact.length ? byExact[0].value : 1;
+  const maxCorrect = byCorrect.length ? byCorrect[0].value : 1;
 
   setHTML("accuracyBoards", `
     <div class="ranking-board">
-      <h3>🎯 Placares Exatos</h3>
-      ${exact.map((p, i) => renderMiniRankRow(p.name || p.nickname, getExactScores(p), "cravadas", i, maxExact,
-        participants.find(par => (par.name || par.nickname) === (p.name || p.nickname))?.participant_id
-      )).join("")}
+      <h3>🎯 Placares Exatos (+5 ou +10 pts)</h3>
+      ${byExact.map((p, i) => renderMiniRankRow(p.name, p.value, "exatos", i, maxExact, p.participantId)).join("")}
     </div>
     <div class="ranking-board">
-      <h3>✅ Resultados Simples</h3>
-      ${simple.map((p, i) => renderMiniRankRow(p.name || p.nickname, getCorrectResults(p), "acertos", i, maxSimple,
-        participants.find(par => (par.name || par.nickname) === (p.name || p.nickname))?.participant_id
-      )).join("")}
+      <h3>✅ Resultados Simples (+3 pts)</h3>
+      ${byCorrect.map((p, i) => renderMiniRankRow(p.name, p.value, "acertos", i, maxCorrect, p.participantId)).join("")}
     </div>
   `);
 }
@@ -1021,7 +1282,7 @@ function renderSpecialInsights() {
   const zebra = getBiggestZebra();
   const bestGame = getBestPointsGame();
   setHTML("specialInsights", `
-    <div class="insight-card green">
+    <div class="insight-card green" onclick="${zebra ? `openMatchModal('${zebra.match.match_id}')` : ''}" style="${zebra ? 'cursor:pointer' : ''}">
       <div class="insight-icon">🦓</div>
       <div>
         <span>Maior Zebra Acertada</span>
@@ -1029,7 +1290,7 @@ function renderSpecialInsights() {
         <small>${zebra ? `Apenas ${zebra.pct}% apostaram em ${zebra.resultLabel}. ${zebra.exactNames || "Ninguém cravou o placar."}` : "Ainda sem jogos suficientes."}</small>
       </div>
     </div>
-    <div class="insight-card blue">
+    <div class="insight-card blue" onclick="${bestGame ? `openMatchModal('${bestGame.match.match_id}')` : ''}" style="${bestGame ? 'cursor:pointer' : ''}">
       <div class="insight-icon">💎</div>
       <div>
         <span>Jogo Que Mais Rendeu</span>
@@ -1066,17 +1327,14 @@ function getBestPointsGame() {
 function renderComebackTable() {
   const remaining = matches.filter(isFuture).length;
   const leaderPoints = ranking.length ? getPoints(ranking[0]) : 0;
-  // Pontos disponíveis: jogos normais = 5pts max, bônus = 10pts max
-  // Como não sabemos quais dos futuros serão bônus para cada participante,
-  // usamos o máximo possível por jogo futuro (conservador: 5pts)
   setHTML("comebackTable", `
     <table>
       <thead>
         <tr>
           <th>Apostador</th>
           <th>Pontos</th>
-          <th>Possíveis</th>
-          <th>Máximo</th>
+          <th>Jogos Restantes</th>
+          <th>Máximo Possível</th>
           <th>Chance</th>
         </tr>
       </thead>
@@ -1087,7 +1345,7 @@ function renderComebackTable() {
           const max = current + available;
           const chance = max <= 0 ? 0 : Math.min(99, Math.max(1, Math.round((current / Math.max(leaderPoints, 1)) * 55 + (available > 0 ? 5 : 0))));
           const name = p.name || p.nickname || "-";
-          const participantId = p.participant_id || participants.find(par => (par.name || par.nickname) === name)?.participant_id;
+          const participantId = p.participant_id || getParticipantIdByName(name);
           return `
             <tr class="clickable" onclick="openParticipantModal('${participantId}')">
               <td>
@@ -1097,7 +1355,7 @@ function renderComebackTable() {
                 </div>
               </td>
               <td class="green-number">${current}</td>
-              <td class="yellow-number">${available}</td>
+              <td class="yellow-number">${remaining}</td>
               <td>${max}</td>
               <td><span class="chance-pill">${chance}%</span></td>
             </tr>
@@ -1170,24 +1428,34 @@ function renderPointsChart() {
 }
 
 function renderExactChart() {
-  const data = getTopRanking();
+  // FIX: usa recálculo local
+  const data = getTopRanking().map(p => ({
+    name: p.name || p.nickname || "-",
+    value: calcExactScores(p.participant_id || getParticipantIdByName(p.name || p.nickname))
+  })).sort((a, b) => b.value - a.value);
+
   createChart("exactChart", {
     type: "bar",
     data: {
-      labels: data.map(p => p.name || p.nickname || "-"),
-      datasets: [{ label: "Placares exatos", data: data.map(p => getExactScores(p)), backgroundColor: "#facc15", borderColor: "#fde68a", borderWidth: 1, borderRadius: 6 }]
+      labels: data.map(p => p.name),
+      datasets: [{ label: "Placares exatos", data: data.map(p => p.value), backgroundColor: "#facc15", borderColor: "#fde68a", borderWidth: 1, borderRadius: 6 }]
     },
     options: baseChartOptions({ indexAxis: "y", plugins: { legend: { display: false } } })
   });
 }
 
 function renderCorrectChart() {
-  const data = getTopRanking();
+  // FIX: usa recálculo local
+  const data = getTopRanking().map(p => ({
+    name: p.name || p.nickname || "-",
+    value: calcCorrectResults(p.participant_id || getParticipantIdByName(p.name || p.nickname))
+  })).sort((a, b) => b.value - a.value);
+
   createChart("correctChart", {
     type: "bar",
     data: {
-      labels: data.map(p => p.name || p.nickname || "-"),
-      datasets: [{ label: "Acertos", data: data.map(p => getCorrectResults(p)), backgroundColor: "#38bdf8", borderColor: "#bae6fd", borderWidth: 1, borderRadius: 6 }]
+      labels: data.map(p => p.name),
+      datasets: [{ label: "Acertos (resultado)", data: data.map(p => p.value), backgroundColor: "#38bdf8", borderColor: "#bae6fd", borderWidth: 1, borderRadius: 6 }]
     },
     options: baseChartOptions({ plugins: { legend: { display: false } } })
   });
@@ -1229,13 +1497,20 @@ function renderMatchStatusChart() {
 }
 
 function renderPointsExactChart() {
-  const data = getTopRanking();
+  const data = getTopRanking().map(p => {
+    const pid = p.participant_id || getParticipantIdByName(p.name || p.nickname);
+    return {
+      x: calcExactScores(pid),
+      y: getPoints(p),
+      label: p.name || p.nickname
+    };
+  });
   createChart("pointsExactChart", {
     type: "scatter",
     data: {
       datasets: [{
         label: "Participantes",
-        data: data.map(p => ({ x: getExactScores(p), y: getPoints(p), label: p.name || p.nickname })),
+        data,
         backgroundColor: "#facc15", borderColor: "#fde68a", pointRadius: 7, pointHoverRadius: 10
       }]
     },
