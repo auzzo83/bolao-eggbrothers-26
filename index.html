@@ -19,6 +19,14 @@
     </div>
   </div>
 
+  <!-- MODAL JOGO -->
+  <div id="matchModal" class="modal-overlay" onclick="closeMatchModal(event)">
+    <div class="modal-box modal-box-wide">
+      <button class="modal-close" onclick="closeMatchModal()">✕</button>
+      <div id="matchModalContent"></div>
+    </div>
+  </div>
+
   <header class="hero">
     <div class="hero-brand">
       <p class="eyebrow">⚽ Copa do Mundo 2026</p>
@@ -33,6 +41,10 @@
       <div class="hero-card pulse-card">
         <span>🔴 AO VIVO</span>
         <strong id="liveStatus">Verificando...</strong>
+      </div>
+      <div class="hero-card">
+        <span>Fonte dos placares</span>
+        <strong id="scoreSource">Planilha</strong>
       </div>
     </div>
   </header>
@@ -131,6 +143,7 @@
       </div>
       <div class="matches-filter">
         <button class="filter-btn active" onclick="filterMatches('all', this)">Todos</button>
+        <button class="filter-btn" onclick="filterMatches('live', this)">Ao vivo</button>
         <button class="filter-btn" onclick="filterMatches('finished', this)">Finalizados</button>
         <button class="filter-btn" onclick="filterMatches('future', this)">Próximos</button>
       </div>
