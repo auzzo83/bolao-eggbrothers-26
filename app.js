@@ -1706,16 +1706,16 @@ function renderChartsRoast() {
       tone: "gold",
       icon: "👑",
       label: "Dono momentâneo da bola",
-      title: leader ? `${leader.name || leader.nickname} abriu a geladeira da liderança` : "Sem líder ainda",
-      text: leader ? `${getPoints(leader)} pts. Média da galera: ${avgPoints}. Está confortável, mas soberba também derruba.` : "Quando tiver pontuação, começa a corneta.",
-      action: leaderId ? `openParticipantModal('${leaderId}')` : ""
+      title: leader ? `${leader.name || leader.nickname} O mestre chegou` : "Sem líder ainda",
+      text: leader ? `${getPoints(leader)} pts. Média da galera: ${avgPoints}. Está confortável, mas soberba também derruba.` : "O que você tá fazendo aqui?.",
+", action: leaderId ? `openParticipantModal('${leaderId}')` : """
     },
     {
       tone: "danger",
       icon: "🧯",
       label: "Lanterna oficial",
       title: lantern ? `${lantern.name || lantern.nickname} está iluminando o caminho` : "Sem lanterna ainda",
-      text: lantern ? `${getPoints(lantern)} pts e ${leaderGap} atrás do líder. Ainda dá tempo, mas precisa parar de apostar com o coração.` : "A vergonha será calculada com carinho.",
+      text: lantern ? `${getPoints(lantern)} pts e ${leaderGap} atrás do líder. Nem tenta mais...` : "A vergonha será calculada com carinho.",
       action: lanternId ? `openParticipantModal('${lanternId}')` : ""
     },
     {
