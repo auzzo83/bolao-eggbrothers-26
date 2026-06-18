@@ -105,6 +105,9 @@ h1 {
 
 .pulse-card { border-color: rgba(239,68,68,.4); }
 .pulse-card span { color: #ef4444; }
+.pulse-card strong {
+  color: #fecaca;
+}
 
 /* ==================== NAV ==================== */
 
@@ -280,6 +283,12 @@ main { padding: 32px 48px 80px; max-width: 1400px; margin: 0 auto; }
 
 .premium-match-card.finished { border-color: rgba(34,197,94,.3); }
 .premium-match-card.finished::before { background: rgba(34,197,94,.06); }
+.premium-match-card.live,
+.match-live {
+  border-color: rgba(239,68,68,.58);
+  box-shadow: 0 0 0 1px rgba(239,68,68,.18), 0 12px 42px rgba(239,68,68,.08);
+}
+.premium-match-card.live::before { background: rgba(239,68,68,.08); }
 
 .premium-match-head {
   display: flex;
@@ -448,6 +457,13 @@ main { padding: 32px 48px 80px; max-width: 1400px; margin: 0 auto; }
 
 .status-done { background: rgba(34,197,94,.15); color: var(--green); border: 1px solid rgba(34,197,94,.3); }
 .status-future { background: rgba(56,189,248,.12); color: var(--brand); border: 1px solid rgba(56,189,248,.28); }
+.status-live,
+.badge-live {
+  background: rgba(239,68,68,.14);
+  color: #fecaca;
+  border: 1px solid rgba(239,68,68,.42);
+  animation: livePulse 1.8s ease-in-out infinite;
+}
 
 .bonus-teams {
   display: flex;
@@ -863,8 +879,14 @@ tr.top-row:first-child td { color: var(--gold); }
   transform: translateY(20px);
   transition: transform .25s;
 }
+.modal-box-wide { max-width: 940px; }
 
 .modal-overlay.open .modal-box { transform: translateY(0); }
+
+@keyframes livePulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(239,68,68,.25); }
+  50% { box-shadow: 0 0 0 5px rgba(239,68,68,0); }
+}
 
 .modal-close {
   position: absolute;
