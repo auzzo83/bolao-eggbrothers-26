@@ -1,0 +1,113 @@
+name: Atualizar placares ao vivo
+
+on:
+  schedule:
+    - cron: "*/5 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  update-live-scores:
+    runs-on: ubuntu-latest
+    env:
+      API_FOOTBALL_KEY: ${{ secrets.API_FOOTBALL_KEY }}
+      API_FOOTBALL_LEAGUE: ${{ vars.API_FOOTBALL_LEAGUE || '1' }}
+      API_FOOTBALL_SEASON: ${{ vars.API_FOOTBALL_SEASON || '2026' }}
+      TZ_NAME: America/Sao_Paulo
+    steps:
+      - name: Baixar repositório
+        uses: actions/checkout@v4
+
+      - name: Buscar placares do dia
+        run: |
+          node <<'NODE'
+          const fs = require("fs");
+
+          const apiKey = process.env.API_FOOTBALL_KEY;
+          const league = process.env.API_FOOTBALL_LEAGUE;
+          const season = process.env.API_FOOTBALL_SEASON;
+          const timezone = process.env.TZ_NAME || "America/Sao_Paulo";
+
+          function localDate() {
+            return new Intl.DateTimeFormat("en-CA", {
+              timeZone: timezone,
+              year: "numeric",
+              month: "2-digit",
+              day: "2-digit"
+            }).format(new Date());
+          }
+
+          function save(payload) {
+            fs.mkdirSync("data", { recursive: true });
+            fs.writeFileSync("data/live-scores.json", JSON.stringify(payload, null, 2) + "\n");
+          }
+
+          if (!apiKey) {
+            save({
+              meta: {
+                updated_at: new Date().toISOString(),
+                source: "pending",
+                message: "Aguardando configuração do segredo API_FOOTBALL_KEY no GitHub."
+              },
+              fixtures: []
+            });
+            process.exit(0);
+          }
+
+          const date = localDate();
+          const url = new URL("https://v3.football.api-sports.io/fixtures");
+          url.searchParams.set("league", league);
+          url.searchParams.set("season", season);
+          url.searchParams.set("date", date);
+          url.searchParams.set("timezone", timezone);
+
+          const response = await fetch(url, {
+            headers: { "x-apisports-key": apiKey }
+          });
+
+          if (!response.ok) {
+            throw new Error(`API-Football falhou com status ${response.status}`);
+          }
+
+          const json = await response.json();
+          const fixtures = (json.response || []).map(item => ({
+            fixture_id: item.fixture && item.fixture.id,
+            date: item.fixture && item.fixture.date,
+            status: item.fixture && item.fixture.status && item.fixture.status.long,
+            status_short: item.fixture && item.fixture.status && item.fixture.status.short,
+            elapsed: item.fixture && item.fixture.status && item.fixture.status.elapsed,
+            league: item.league && item.league.name,
+            round: item.league && item.league.round,
+            home_team: item.teams && item.teams.home && item.teams.home.name,
+            away_team: item.teams && item.teams.away && item.teams.away.name,
+            home_score: item.goals && item.goals.home,
+            away_score: item.goals && item.goals.away
+          }));
+
+          save({
+            meta: {
+              updated_at: new Date().toISOString(),
+              source: "api-football",
+              league,
+              season,
+              date,
+              timezone,
+              api_results: fixtures.length
+            },
+            fixtures
+          });
+          NODE
+
+      - name: Publicar JSON atualizado
+        run: |
+          if git diff --quiet -- data/live-scores.json; then
+            echo "Sem mudanças de placar."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/live-scores.json
+          git commit -m "Atualiza placares ao vivo"
+          git push
