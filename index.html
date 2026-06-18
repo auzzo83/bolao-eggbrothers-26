@@ -49,6 +49,8 @@
     <button class="nav-btn active" onclick="showPage('home', this)">🏠 Home</button>
     <button class="nav-btn" onclick="showPage('ranking', this)">🏆 Ranking</button>
     <button class="nav-btn" onclick="showPage('matches', this)">⚽ Jogos</button>
+    <button class="nav-btn" onclick="showPage('round', this)">🔥 Rodada</button>
+    <button class="nav-btn" onclick="showPage('arena', this)">😂 Arena</button>
     <button class="nav-btn" onclick="showPage('predictions', this)">🎯 Palpites</button>
     <button class="nav-btn" onclick="showPage('stats', this)">📊 Estatísticas</button>
     <button class="nav-btn" onclick="showPage('charts', this)">📈 Gráficos</button>
@@ -106,6 +108,45 @@
       </div>
       <div id="homeCuriosities" class="curiosity-grid"></div>
 
+    </section>
+
+    <!-- MODO RODADA -->
+    <section id="round" class="page">
+      <div class="section-title">
+        <span class="section-icon">🔥</span>
+        <h2>Modo Rodada</h2>
+      </div>
+      <div id="roundNews" class="news-grid"></div>
+      <div id="roundImpact" class="impact-panel"></div>
+      <div id="roundMatches" class="premium-match-grid"></div>
+      <div class="share-box">
+        <button class="share-btn" onclick="copyRoundSummary()">Copiar resumo da rodada</button>
+        <small id="shareStatus"></small>
+      </div>
+    </section>
+
+    <!-- ARENA DA ZOEIRA -->
+    <section id="arena" class="page">
+      <div class="section-title">
+        <span class="section-icon">😂</span>
+        <h2>Arena da Zoeira</h2>
+      </div>
+      <div id="arenaBadges" class="arena-grid"></div>
+      <div class="section-title">
+        <span class="section-icon">🏅</span>
+        <h2>Badges & Conquistas</h2>
+      </div>
+      <div id="achievementWall" class="achievement-wall"></div>
+      <div class="section-title">
+        <span class="section-icon">📉</span>
+        <h2>Histórico de Posição</h2>
+      </div>
+      <div id="positionHistory" class="history-board"></div>
+      <div class="section-title">
+        <span class="section-icon">🧮</span>
+        <h2>Simulador de Virada</h2>
+      </div>
+      <div id="comebackSimulator" class="simulator-grid"></div>
     </section>
 
     <!-- RANKING -->
