@@ -104,7 +104,7 @@ function isFilled(value) {
 }
 
 function normalizeName(value) {
-  return String(value || "")
+  const normalized = String(value || "")
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
     .toLowerCase()
@@ -115,6 +115,63 @@ function normalizeName(value) {
     .replace(/\b(turkiye|turkey|turquia)\b/g, "turkiye")
     .replace(/[^a-z0-9]+/g, " ")
     .trim();
+  const aliases = {
+    "austria": "austria",
+    "jordania": "jordan",
+    "jordan": "jordan",
+    "rd congo": "congo dr",
+    "dr congo": "congo dr",
+    "congo dr": "congo dr",
+    "inglaterra": "england",
+    "england": "england",
+    "croacia": "croatia",
+    "croatia": "croatia",
+    "suica": "switzerland",
+    "switzerland": "switzerland",
+    "bosnia": "bosnia and herzegovina",
+    "bosnia and herzegovina": "bosnia and herzegovina",
+    "republica tcheca": "czechia",
+    "czech republic": "czechia",
+    "africa do sul": "south africa",
+    "south africa": "south africa",
+    "coreia do sul": "korea republic",
+    "south korea": "korea republic",
+    "eua": "usa",
+    "united states": "usa",
+    "escocia": "scotland",
+    "scotland": "scotland",
+    "marrocos": "morocco",
+    "morocco": "morocco",
+    "turquia": "turkiye",
+    "paraguai": "paraguay",
+    "holanda": "netherlands",
+    "netherlands": "netherlands",
+    "suecia": "sweden",
+    "sweden": "sweden",
+    "alemanha": "germany",
+    "germany": "germany",
+    "costa do marfim": "ivory coast",
+    "ivory coast": "ivory coast",
+    "curacao": "curacao",
+    "japao": "japan",
+    "japan": "japan",
+    "espanha": "spain",
+    "spain": "spain",
+    "arabia saudita": "saudi arabia",
+    "saudi arabia": "saudi arabia",
+    "belgica": "belgium",
+    "belgium": "belgium",
+    "ira": "iran",
+    "iran": "iran",
+    "cabo verde": "cape verde",
+    "nova zelandia": "new zealand",
+    "new zealand": "new zealand",
+    "egito": "egypt",
+    "egypt": "egypt",
+    "iraque": "iraq",
+    "iraq": "iraq"
+  };
+  return aliases[normalized] || normalized;
 }
 
 function sameTeam(a, b) {
@@ -213,14 +270,36 @@ function hasFinalScore(match) {
   return isFilled(match && match.home_score) && isFilled(match && match.away_score);
 }
 
+function isLiveStatus(status) {
+  return ["live", "ao vivo", "1h", "ht", "2h", "et", "bt", "p", "susp", "int"].includes(String(status || "").toLowerCase());
+}
+
+function parseMatchDateTime(match) {
+  if (!match || !match.date || !match.time) return null;
+  const cleanTime = String(match.time).trim().replace("h", ":").replace(".", ":");
+  const [hour = "0", minute = "0"] = cleanTime.split(":");
+  const parsed = new Date(`${match.date}T${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}:00`);
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+}
+
+function isLiveBySchedule(match) {
+  if (!match || hasFinalScore(match)) return false;
+  const start = parseMatchDateTime(match);
+  if (!start) return false;
+  const now = new Date();
+  const elapsed = now.getTime() - start.getTime();
+  return elapsed >= 0 && elapsed <= 130 * 60 * 1000;
+}
+
 function isFinished(match) {
   const status = getStatus(match);
+  if (isLiveStatus(status)) return false;
   return ["finished", "finalizado", "ft", "aet", "pen"].includes(status) || hasFinalScore(match);
 }
 
 function isLiveMatch(match) {
   const status = getStatus(match);
-  return ["live", "ao vivo", "1h", "ht", "2h", "et", "bt", "p", "susp", "int"].includes(status) && !isFinished(match);
+  return (isLiveStatus(status) || isLiveBySchedule(match)) && !isFinished(match);
 }
 
 function isFuture(match) { return !isFinished(match) && !isLiveMatch(match); }
@@ -229,6 +308,26 @@ function getMatchStatusLabel(match) {
   if (isFinished(match)) return "Finalizado";
   if (isLiveMatch(match)) return match.live_elapsed ? `Ao vivo ${match.live_elapsed}'` : "Ao vivo";
   return "Futuro";
+}
+
+function normalizeMatchRows() {
+  matches = matches.map(match => {
+    const normalized = { ...match };
+    Object.keys(normalized).forEach(key => {
+      if (typeof normalized[key] === "string") normalized[key] = normalized[key].trim();
+    });
+
+    const status = getStatus(normalized);
+    if (hasFinalScore(normalized) && !isLiveStatus(status)) {
+      normalized.status = "finished";
+    } else if (!hasFinalScore(normalized) && isLiveBySchedule(normalized)) {
+      normalized.status = "live";
+      const start = parseMatchDateTime(normalized);
+      normalized.live_elapsed = start ? Math.max(1, Math.min(130, Math.floor((Date.now() - start.getTime()) / 60000))) : "";
+    }
+
+    return normalized;
+  });
 }
 
 function getParticipant(participantId) {
@@ -294,6 +393,42 @@ function calcAproveitamento(participantId) {
   const earned = finished.reduce((sum, p) => { const m = getMatchById(p.match_id); return sum + scorePrediction(m, p); }, 0);
   const max = finished.reduce((sum, p) => sum + (isPredictionBonus(p) ? 10 : 5), 0);
   return max > 0 ? Math.round(earned / max * 100) : 0;
+}
+
+function getParticipantSummary(participantId) {
+  const rows = predictions.filter(p => String(p.participant_id) === String(participantId));
+  const finishedRows = rows.filter(p => {
+    const match = getMatchById(p.match_id);
+    return match && isFinished(match);
+  });
+  const points = finishedRows.reduce((sum, pred) => {
+    const match = getMatchById(pred.match_id);
+    return sum + scorePrediction(match, pred);
+  }, 0);
+  const exact = finishedRows.reduce((sum, pred) => {
+    const match = getMatchById(pred.match_id);
+    const pts = scorePrediction(match, pred);
+    return sum + (pts === 5 || pts === 10 ? 1 : 0);
+  }, 0);
+  const zeroes = finishedRows.reduce((sum, pred) => {
+    const match = getMatchById(pred.match_id);
+    return sum + (scorePrediction(match, pred) === 0 ? 1 : 0);
+  }, 0);
+  const draws = rows.reduce((sum, pred) => {
+    if (!isFilled(pred.pred_home) || !isFilled(pred.pred_away)) return sum;
+    return sum + (getMatchResult(pred.pred_home, pred.pred_away) === "draw" ? 1 : 0);
+  }, 0);
+  return {
+    participantId,
+    name: getParticipantName(participantId),
+    predictions: rows.length,
+    finishedPredictions: finishedRows.length,
+    points,
+    exact,
+    zeroes,
+    draws,
+    accuracy: finishedRows.length ? Math.round(points / finishedRows.reduce((sum, p) => sum + (isPredictionBonus(p) ? 10 : 5), 0) * 100) : 0
+  };
 }
 
 function getParticipantIdByName(name) {
@@ -1537,6 +1672,7 @@ function renderCharts() {
     Object.values(charts).forEach(c => c && c.destroy && c.destroy());
     charts = {};
   }
+  renderChartsRoast();
   renderPointsChart();
   renderExactChart();
   renderCorrectChart();
@@ -1551,6 +1687,82 @@ function renderCharts() {
 }
 
 function getTopRanking(limit = 15) { return ranking.slice(0, limit); }
+
+function renderChartsRoast() {
+  const summaries = participants.map(p => getParticipantSummary(p.participant_id));
+  const leader = ranking[0];
+  const lantern = ranking[ranking.length - 1];
+  const leaderId = leader && (leader.participant_id || getParticipantIdByName(leader.name || leader.nickname));
+  const lanternId = lantern && (lantern.participant_id || getParticipantIdByName(lantern.name || lantern.nickname));
+  const exactKing = [...summaries].sort((a, b) => b.exact - a.exact || b.points - a.points)[0];
+  const zeroBoss = [...summaries].sort((a, b) => b.zeroes - a.zeroes || a.points - b.points)[0];
+  const drawMerchant = [...summaries].sort((a, b) => b.draws - a.draws)[0];
+  const zebra = getBiggestZebra();
+  const avgPoints = ranking.length ? Math.round(ranking.reduce((sum, p) => sum + getPoints(p), 0) / ranking.length) : 0;
+  const leaderGap = leader && lantern ? getPoints(leader) - getPoints(lantern) : 0;
+
+  const cards = [
+    {
+      tone: "gold",
+      icon: "👑",
+      label: "Dono momentâneo da bola",
+      title: leader ? `${leader.name || leader.nickname} abriu a geladeira da liderança` : "Sem líder ainda",
+      text: leader ? `${getPoints(leader)} pts. Média da galera: ${avgPoints}. Está confortável, mas soberba também derruba.` : "Quando tiver pontuação, começa a corneta.",
+      action: leaderId ? `openParticipantModal('${leaderId}')` : ""
+    },
+    {
+      tone: "danger",
+      icon: "🧯",
+      label: "Lanterna oficial",
+      title: lantern ? `${lantern.name || lantern.nickname} está iluminando o caminho` : "Sem lanterna ainda",
+      text: lantern ? `${getPoints(lantern)} pts e ${leaderGap} atrás do líder. Ainda dá tempo, mas precisa parar de apostar com o coração.` : "A vergonha será calculada com carinho.",
+      action: lanternId ? `openParticipantModal('${lanternId}')` : ""
+    },
+    {
+      tone: "green",
+      icon: "🎯",
+      label: "Psicógrafo de placar",
+      title: exactKing && exactKing.exact ? `${exactKing.name} cravou ${exactKing.exact}` : "Ninguém virou vidente ainda",
+      text: exactKing && exactKing.exact ? "Quando acerta placar exato, finge naturalidade. Todos sabemos que foi sorte." : "Por enquanto todo mundo está chutando no escuro com convicção.",
+      action: exactKing ? `openParticipantModal('${exactKing.participantId}')` : ""
+    },
+    {
+      tone: "red",
+      icon: "🧊",
+      label: "Rei do zero",
+      title: zeroBoss && zeroBoss.zeroes ? `${zeroBoss.name} já coleciona ${zeroBoss.zeroes} zeros` : "A fábrica de zero ainda está fechada",
+      text: zeroBoss && zeroBoss.zeroes ? "É consistência, só que do lado errado da história." : "Sem jogos suficientes para apontar o dedo com responsabilidade.",
+      action: zeroBoss ? `openParticipantModal('${zeroBoss.participantId}')` : ""
+    },
+    {
+      tone: "blue",
+      icon: "🤝",
+      label: "Sindicato do empate",
+      title: drawMerchant && drawMerchant.draws ? `${drawMerchant.name} ama um 1 x 1` : "Poucos empates apostados",
+      text: drawMerchant && drawMerchant.draws ? `${drawMerchant.draws} palpites em empate. A pessoa não escolhe lado nem no bolão.` : "A galera está escolhendo lados. Corajosos ou iludidos, veremos.",
+      action: drawMerchant ? `openParticipantModal('${drawMerchant.participantId}')` : ""
+    },
+    {
+      tone: "purple",
+      icon: "🦓",
+      label: "Jogo que humilhou planilhas",
+      title: zebra ? `${zebra.match.home_team} ${zebra.match.home_score} x ${zebra.match.away_score} ${zebra.match.away_team}` : "A zebra está aquecendo",
+      text: zebra ? `Só ${zebra.pct}% foram no resultado certo. O resto chamou de absurdo depois que acabou.` : "Quando pintar a primeira surpresa, ela aparece aqui.",
+      action: zebra ? `openMatchModal('${zebra.match.match_id}')` : ""
+    }
+  ];
+
+  setHTML("chartsRoast", cards.map(card => `
+    <div class="roast-card roast-${card.tone}" ${card.action ? `onclick="${card.action}"` : ""}>
+      <div class="roast-icon">${card.icon}</div>
+      <div>
+        <span>${card.label}</span>
+        <strong>${card.title}</strong>
+        <small>${card.text}</small>
+      </div>
+    </div>
+  `).join(""));
+}
 
 function renderPointsChart() {
   const data = getTopRanking();
@@ -1746,7 +1958,9 @@ async function init() {
       fetchCsv(SHEETS.RANKING, "Ranking")
     ]);
 
+    normalizeMatchRows();
     applyLiveScores(await fetchLiveScores());
+    normalizeMatchRows();
 
     ranking = ranking
       .map(row => {
