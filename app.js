@@ -149,8 +149,7 @@ function findLiveFixture(match, fixtures) {
 function applyLiveScores(payload) {
   liveScoreMeta = payload ? payload.meta || {} : null;
   if (!payload || !Array.isArray(payload.fixtures)) {
-    setText("liveStatus", "Sem API");
-    setText("scoreSource", "Planilha");
+    setText("liveStatus", "Nenhum jogo ao vivo");
     return;
   }
 
@@ -184,8 +183,13 @@ function applyLiveScores(payload) {
     };
   });
 
-  setText("liveStatus", liveCount ? `${liveCount} jogo(s) agora` : fresh ? "Atualizado" : "Atrasado");
-  setText("scoreSource", matchedCount ? "API-Football" : "Planilha");
+  if (liveCount) {
+    setText("liveStatus", `${liveCount} jogo(s) agora`);
+  } else if (fresh || liveScoreMeta.source === "api-football") {
+    setText("liveStatus", "Nenhum jogo ao vivo");
+  } else {
+    setText("liveStatus", "Atualizando");
+  }
 }
 
 function getMatchResult(home, away) {
@@ -711,11 +715,7 @@ function renderHome() {
   setText("totalParticipants", participants.length);
   setText("finishedMatches", finished);
   setText("exactScores", exactTotal);
-  if (!liveScoreMeta || liveScoreMeta.source === "not-configured") {
-    setText("liveStatus", "Configurar API");
-  } else {
-    setText("liveStatus", liveMatches.length > 0 ? `${liveMatches.length} jogo(s) agora` : "Nenhum jogo ao vivo");
-  }
+  setText("liveStatus", liveMatches.length > 0 ? `${liveMatches.length} jogo(s) agora` : "Nenhum jogo ao vivo");
 
   renderPodium();
   renderTodayMatches();
