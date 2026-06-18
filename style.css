@@ -638,7 +638,6 @@ main { padding: 32px 48px 80px; max-width: 1400px; margin: 0 auto; }
 }
 
 .match-finished { border-color: rgba(34,197,94,.25); }
-.match-future {}
 
 .match-card-header {
   display: flex;
