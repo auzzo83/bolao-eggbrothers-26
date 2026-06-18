@@ -558,6 +558,7 @@ function goToPage(pageId) {
 
 function setHTML(id, html) { const el = document.getElementById(id); if (el) el.innerHTML = html; }
 function setText(id, text) { const el = document.getElementById(id); if (el) el.innerText = text; }
+function setNote(id, text) { const el = document.getElementById(id); if (el) el.textContent = text || ""; }
 
 // ==================== MODAL PARTICIPANTE ====================
 
@@ -1673,6 +1674,8 @@ function renderCharts() {
     charts = {};
   }
   renderChartsRoast();
+  renderChartsStory();
+  renderShameBoard();
   renderPointsChart();
   renderExactChart();
   renderCorrectChart();
@@ -1706,16 +1709,16 @@ function renderChartsRoast() {
       tone: "gold",
       icon: "👑",
       label: "Dono momentâneo da bola",
-      title: leader ? `${leader.name || leader.nickname} O mestre chegou` : "Sem líder ainda",
-      text: leader ? `${getPoints(leader)} pts. Média da galera: ${avgPoints}. Está confortável, mas soberba também derruba.` : "O que você tá fazendo aqui?.",
-", action: leaderId ? `openParticipantModal('${leaderId}')` : """
+      title: leader ? `${leader.name || leader.nickname} abriu a geladeira da liderança` : "Sem líder ainda",
+      text: leader ? `${getPoints(leader)} pts. Média da galera: ${avgPoints}. Está confortável, mas soberba também derruba.` : "Quando tiver pontuação, começa a corneta.",
+      action: leaderId ? `openParticipantModal('${leaderId}')` : ""
     },
     {
       tone: "danger",
       icon: "🧯",
       label: "Lanterna oficial",
       title: lantern ? `${lantern.name || lantern.nickname} está iluminando o caminho` : "Sem lanterna ainda",
-      text: lantern ? `${getPoints(lantern)} pts e ${leaderGap} atrás do líder. Nem tenta mais...` : "A vergonha será calculada com carinho.",
+      text: lantern ? `${getPoints(lantern)} pts e ${leaderGap} atrás do líder. Ainda dá tempo, mas precisa parar de apostar com o coração.` : "A vergonha será calculada com carinho.",
       action: lanternId ? `openParticipantModal('${lanternId}')` : ""
     },
     {
@@ -1764,16 +1767,111 @@ function renderChartsRoast() {
   `).join(""));
 }
 
+function getChartSummaries() {
+  return participants.map(p => getParticipantSummary(p.participant_id))
+    .filter(item => item.predictions > 0 || item.finishedPredictions > 0);
+}
+
+function getAveragePoints() {
+  return ranking.length ? Math.round(ranking.reduce((sum, p) => sum + getPoints(p), 0) / ranking.length) : 0;
+}
+
+function getChartLeader() {
+  return ranking[0] || null;
+}
+
+function getChartLantern() {
+  return ranking.length ? ranking[ranking.length - 1] : null;
+}
+
+function renderChartsStory() {
+  const leader = getChartLeader();
+  const lantern = getChartLantern();
+  const finished = matches.filter(isFinished).length;
+  const remaining = matches.filter(isFuture).length;
+  const avg = getAveragePoints();
+  const gap = leader && lantern ? getPoints(leader) - getPoints(lantern) : 0;
+  const summaries = getChartSummaries();
+  const zeroBoss = [...summaries].sort((a, b) => b.zeroes - a.zeroes || a.points - b.points)[0];
+
+  setHTML("chartsStory", `
+    <div class="story-main">
+      <span>Resumo sem passar pano</span>
+      <strong>${leader ? `${leader.name || leader.nickname} lidera com ${getPoints(leader)} pts` : "O bolão ainda está zerado"}</strong>
+      <small>${leader && lantern ? `${lantern.name || lantern.nickname} segura a lanterna, ${gap} ponto(s) atrás. Média geral: ${avg} pts.` : "Assim que os resultados entrarem, a corneta começa oficialmente."}</small>
+    </div>
+    <div class="story-mini">
+      <span>Jogos finalizados</span>
+      <strong>${finished}</strong>
+      <small>${remaining} ainda podem destruir certezas.</small>
+    </div>
+    <div class="story-mini">
+      <span>Modo sofrimento</span>
+      <strong>${zeroBoss && zeroBoss.zeroes ? zeroBoss.zeroes : 0}</strong>
+      <small>${zeroBoss && zeroBoss.zeroes ? `${zeroBoss.name} é o atual especialista em sair sem ponto.` : "Ninguém merece corneta ainda."}</small>
+    </div>
+  `);
+}
+
+function renderShameBoard() {
+  const summaries = getChartSummaries();
+  const rows = summaries.map(item => ({
+    ...item,
+    painScore: item.zeroes * 3 + Math.max(0, 5 - item.exact) + Math.max(0, 25 - item.accuracy)
+  })).sort((a, b) => b.painScore - a.painScore || a.points - b.points).slice(0, 8);
+
+  setHTML("shameBoard", `
+    <div class="shame-head">
+      <div>
+        <span>Mural da Corneta</span>
+        <strong>Quem está devendo explicações</strong>
+      </div>
+      <small>Critério científico: zeros, baixo aproveitamento e pouca cravada. Revisado pelo departamento de zoeira.</small>
+    </div>
+    <div class="shame-list">
+      ${rows.length ? rows.map((row, index) => `
+        <div class="shame-row" onclick="openParticipantModal('${row.participantId}')">
+          <div class="shame-pos">${index + 1}</div>
+          ${renderAvatar(row.name, 34)}
+          <div class="shame-info">
+            <strong>${row.name}</strong>
+            <small>${row.zeroes} zero(s), ${row.exact} exato(s), ${row.accuracy}% aproveitamento</small>
+          </div>
+          <div class="shame-tag">${index === 0 ? "favorito ao meme" : row.points ? `${row.points} pts` : "em obras"}</div>
+        </div>
+      `).join("") : `<div class="empty-state">Ainda sem dados suficientes para cornetar com justiça.</div>`}
+    </div>
+  `);
+}
+
+function chartColorsForRanking(data, base = "#38bdf8") {
+  return data.map((_, index) => {
+    if (index === 0) return "#facc15";
+    if (index === data.length - 1 && data.length > 2) return "#ef4444";
+    return base;
+  });
+}
+
+function chartTooltipSuffix(context, unit) {
+  const label = context.label || "";
+  const value = context.parsed && typeof context.parsed === "object" ? context.parsed.y ?? context.parsed.x : context.parsed;
+  return `${label}: ${value} ${unit}`;
+}
+
 function renderPointsChart() {
   const data = getTopRanking();
+  const leader = data[0];
+  const last = data[data.length - 1];
+  const gap = leader && last ? getPoints(leader) - getPoints(last) : 0;
   createChart("pointsChart", {
     type: "bar",
     data: {
       labels: data.map(p => p.name || p.nickname || "-"),
-      datasets: [{ label: "Pontos", data: data.map(p => getPoints(p)), backgroundColor: "#22c55e", borderColor: "#86efac", borderWidth: 1, borderRadius: 6 }]
+      datasets: [{ label: "Pontos", data: data.map(p => getPoints(p)), backgroundColor: chartColorsForRanking(data, "#22c55e"), borderColor: "#86efac", borderWidth: 1, borderRadius: 6 }]
     },
-    options: baseChartOptions({ plugins: { legend: { display: false } } })
+    options: baseChartOptions({ plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => chartTooltipSuffix(ctx, "pts") } } } })
   });
+  setNote("pointsChartNote", leader && last ? `${leader.name || leader.nickname} olha todo mundo de cima. ${last.name || last.nickname} aparece em vermelho porque alguém precisa fechar a porta.` : "Quando entrar pontuação, este gráfico vira o placar oficial da provocação.");
 }
 
 function renderExactChart() {
@@ -1782,15 +1880,18 @@ function renderExactChart() {
     name: p.name || p.nickname || "-",
     value: calcExactScores(p.participant_id || getParticipantIdByName(p.name || p.nickname))
   })).sort((a, b) => b.value - a.value);
+  const top = data[0];
+  const bottom = data[data.length - 1];
 
   createChart("exactChart", {
     type: "bar",
     data: {
       labels: data.map(p => p.name),
-      datasets: [{ label: "Placares exatos", data: data.map(p => p.value), backgroundColor: "#facc15", borderColor: "#fde68a", borderWidth: 1, borderRadius: 6 }]
+      datasets: [{ label: "Placares exatos", data: data.map(p => p.value), backgroundColor: chartColorsForRanking(data, "#facc15"), borderColor: "#fde68a", borderWidth: 1, borderRadius: 6 }]
     },
-    options: baseChartOptions({ indexAxis: "y", plugins: { legend: { display: false } } })
+    options: baseChartOptions({ indexAxis: "y", plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => chartTooltipSuffix(ctx, "cravada(s)") } } } })
   });
+  setNote("exactChartNote", top && top.value ? `${top.name} está no modo vidente com ${top.value} placar(es) exato(s). ${bottom && bottom.value === 0 ? `${bottom.name} ainda está procurando a senha da bola de cristal.` : "Cravada aqui vale respeito e um pouco de desconfiança."}` : "Ainda ninguém cravou. O chute coletivo segue em fase de aquecimento.");
 }
 
 function renderCorrectChart() {
@@ -1799,15 +1900,17 @@ function renderCorrectChart() {
     name: p.name || p.nickname || "-",
     value: calcCorrectResults(p.participant_id || getParticipantIdByName(p.name || p.nickname))
   })).sort((a, b) => b.value - a.value);
+  const top = data[0];
 
   createChart("correctChart", {
     type: "bar",
     data: {
       labels: data.map(p => p.name),
-      datasets: [{ label: "Acertos (resultado)", data: data.map(p => p.value), backgroundColor: "#38bdf8", borderColor: "#bae6fd", borderWidth: 1, borderRadius: 6 }]
+      datasets: [{ label: "Acertos (resultado)", data: data.map(p => p.value), backgroundColor: chartColorsForRanking(data, "#38bdf8"), borderColor: "#bae6fd", borderWidth: 1, borderRadius: 6 }]
     },
-    options: baseChartOptions({ plugins: { legend: { display: false } } })
+    options: baseChartOptions({ plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => chartTooltipSuffix(ctx, "acerto(s)") } } } })
   });
+  setNote("correctChartNote", top && top.value ? `${top.name} está ganhando no arroz com feijão: acerta resultado mesmo sem acertar o placar bonito.` : "Sem acertos simples ainda. A turma está escolhendo lados com fé, não com evidência.");
 }
 
 function renderPredictionResultChart() {
@@ -1827,6 +1930,9 @@ function renderPredictionResultChart() {
     },
     options: { responsive: true, plugins: { legend: { labels: { color: "#dbeafe" } } } }
   });
+  const max = Math.max(home, draw, away);
+  const mood = max === home ? "mandantes" : max === away ? "visitantes" : "empates";
+  setNote("predictionResultChartNote", `O bolão está mais inclinado para ${mood}. Quando todo mundo concorda muito, normalmente vem a rodada para ensinar humildade.`);
 }
 
 function renderMatchStatusChart() {
@@ -1843,6 +1949,10 @@ function renderMatchStatusChart() {
     },
     options: { responsive: true, plugins: { legend: { labels: { color: "#dbeafe" } } } }
   });
+  const finished = matches.filter(isFinished).length;
+  const live = matches.filter(isLiveMatch).length;
+  const future = matches.filter(isFuture).length;
+  setNote("matchStatusChartNote", `${finished} finalizado(s), ${live} ao vivo e ${future} pela frente. Ainda tem muito espaço para virada e para arrependimento público.`);
 }
 
 function renderPointsExactChart() {
@@ -1860,7 +1970,8 @@ function renderPointsExactChart() {
       datasets: [{
         label: "Participantes",
         data,
-        backgroundColor: "#facc15", borderColor: "#fde68a", pointRadius: 7, pointHoverRadius: 10
+        backgroundColor: data.map(point => point.y === Math.max(...data.map(d => d.y)) ? "#facc15" : point.y === Math.min(...data.map(d => d.y)) ? "#ef4444" : "#38bdf8"),
+        borderColor: "#dbeafe", pointRadius: 7, pointHoverRadius: 10
       }]
     },
     options: baseChartOptions({
@@ -1870,6 +1981,7 @@ function renderPointsExactChart() {
       }
     })
   });
+  setNote("pointsExactChartNote", "Quanto mais para cima e para a direita, mais a pessoa pode falar grosso no grupo. Embaixo e à esquerda é território de silêncio estratégico.");
 }
 
 function renderPredictionVolumeChart() {
@@ -1885,25 +1997,30 @@ function renderPredictionVolumeChart() {
       labels: data.map(d => d.name),
       datasets: [{ label: "Palpites enviados", data: data.map(d => d.count), backgroundColor: "#a855f7", borderColor: "#d8b4fe", borderWidth: 1, borderRadius: 6 }]
     },
-    options: baseChartOptions({ indexAxis: "y", plugins: { legend: { display: false } } })
+    options: baseChartOptions({ indexAxis: "y", plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => chartTooltipSuffix(ctx, "palpite(s)") } } } })
   });
+  const top = data[0];
+  setNote("predictionVolumeChartNote", top ? `${top.name} está presente em ${top.count} palpite(s). Pelo menos não dá para acusar de abandono de elenco.` : "Sem volume de palpites para analisar.");
 }
 
 function renderFinishedGoalsChart() {
   const fin = matches.filter(isFinished);
+  const goalData = fin.map(m => ({ match: m, goals: num(m.home_score) + num(m.away_score) }));
+  const wild = [...goalData].sort((a, b) => b.goals - a.goals)[0];
   createChart("finishedGoalsChart", {
     type: "line",
     data: {
       labels: fin.map(m => `${m.home_team} x ${m.away_team}`),
       datasets: [{
         label: "Gols na partida",
-        data: fin.map(m => num(m.home_score) + num(m.away_score)),
+        data: goalData.map(d => d.goals),
         borderColor: "#22c55e", backgroundColor: "rgba(34,197,94,0.15)", tension: 0.35, fill: true,
         pointBackgroundColor: "#22c55e", pointRadius: 5
       }]
     },
     options: baseChartOptions()
   });
+  setNote("finishedGoalsChartNote", wild ? `${wild.match.home_team} x ${wild.match.away_team} teve ${wild.goals} gol(s). Jogo bom para quem gosta de caos e ruim para quem apostou 0 x 0.` : "Assim que sair resultado, aparece aqui onde a rodada foi mais animada.");
 }
 
 function renderTopCountriesChart() {
@@ -1923,10 +2040,11 @@ function renderTopCountriesChart() {
     type: "bar",
     data: {
       labels: data.map(d => d[0]),
-      datasets: [{ label: "Vezes apostada como vencedora", data: data.map(d => d[1]), backgroundColor: "#f97316", borderColor: "#fdba74", borderWidth: 1, borderRadius: 6 }]
+      datasets: [{ label: "Vezes apostada como vencedora", data: data.map(d => d[1]), backgroundColor: chartColorsForRanking(data, "#f97316"), borderColor: "#fdba74", borderWidth: 1, borderRadius: 6 }]
     },
-    options: baseChartOptions({ plugins: { legend: { display: false } } })
+    options: baseChartOptions({ plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => chartTooltipSuffix(ctx, "voto(s)") } } } })
   });
+  setNote("topCountriesChartNote", data[0] ? `${data[0][0]} virou queridinha do bolão com ${data[0][1]} aposta(s) como vencedora. Favoritismo popular, que é diferente de garantia.` : "Sem apostas suficientes para eleger a seleção do coração.");
 }
 
 function renderTopResultsChart() {
@@ -1941,10 +2059,11 @@ function renderTopResultsChart() {
     type: "bar",
     data: {
       labels: data.map(d => d[0].replace("-", " x ")),
-      datasets: [{ label: "Vezes apostado", data: data.map(d => d[1]), backgroundColor: "#06b6d4", borderColor: "#67e8f9", borderWidth: 1, borderRadius: 6 }]
+      datasets: [{ label: "Vezes apostado", data: data.map(d => d[1]), backgroundColor: chartColorsForRanking(data, "#06b6d4"), borderColor: "#67e8f9", borderWidth: 1, borderRadius: 6 }]
     },
-    options: baseChartOptions({ plugins: { legend: { display: false } } })
+    options: baseChartOptions({ plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => chartTooltipSuffix(ctx, "vez(es)") } } } })
   });
+  setNote("topResultsChartNote", data[0] ? `${data[0][0].replace("-", " x ")} é o placar mais popular. É o palpite confortável: parece inteligente até a bola rolar.` : "Quando os palpites entrarem, este gráfico mostra o placar preferido da massa.");
 }
 
 // ==================== INIT ====================
