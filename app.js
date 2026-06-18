@@ -1709,8 +1709,8 @@ function renderChartsRoast() {
       tone: "gold",
       icon: "👑",
       label: "Dono momentâneo da bola",
-      title: leader ? `${leader.name || leader.nickname} abriu a geladeira da liderança` : "Sem líder ainda",
-      text: leader ? `${getPoints(leader)} pts. Média da galera: ${avgPoints}. Está confortável, mas soberba também derruba.` : "Quando tiver pontuação, começa a corneta.",
+      title: leader ? `${leader.name || leader.nickname} Segue o líder : "Sem líder ainda",
+      text: leader ? `${getPoints(leader)} pts. Média da galera: ${avgPoints}. Está confortável, mas pode peidar.` : "Quando tiver pontuação, a gente conversa.",
       action: leaderId ? `openParticipantModal('${leaderId}')` : ""
     },
     {
@@ -1718,13 +1718,13 @@ function renderChartsRoast() {
       icon: "🧯",
       label: "Lanterna oficial",
       title: lantern ? `${lantern.name || lantern.nickname} está iluminando o caminho` : "Sem lanterna ainda",
-      text: lantern ? `${getPoints(lantern)} pts e ${leaderGap} atrás do líder. Ainda dá tempo, mas precisa parar de apostar com o coração.` : "A vergonha será calculada com carinho.",
+      text: lantern ? `${getPoints(lantern)} pts e ${leaderGap} atrás do líder. Desiste ai...` : "A vergonha será calculada com carinho.",
       action: lanternId ? `openParticipantModal('${lanternId}')` : ""
     },
     {
       tone: "green",
       icon: "🎯",
-      label: "Psicógrafo de placar",
+      label: "Nostradamus do caraio",
       title: exactKing && exactKing.exact ? `${exactKing.name} cravou ${exactKing.exact}` : "Ninguém virou vidente ainda",
       text: exactKing && exactKing.exact ? "Quando acerta placar exato, finge naturalidade. Todos sabemos que foi sorte." : "Por enquanto todo mundo está chutando no escuro com convicção.",
       action: exactKing ? `openParticipantModal('${exactKing.participantId}')` : ""
@@ -1826,7 +1826,7 @@ function renderShameBoard() {
         <span>Mural da Corneta</span>
         <strong>Quem está devendo explicações</strong>
       </div>
-      <small>Critério científico: zeros, baixo aproveitamento e pouca cravada. Revisado pelo departamento de zoeira.</small>
+      <small>Critério científico: zeros, baixo aproveitamento e pouca cravada. Ruim pa carai.</small>
     </div>
     <div class="shame-list">
       ${rows.length ? rows.map((row, index) => `
@@ -1837,7 +1837,7 @@ function renderShameBoard() {
             <strong>${row.name}</strong>
             <small>${row.zeroes} zero(s), ${row.exact} exato(s), ${row.accuracy}% aproveitamento</small>
           </div>
-          <div class="shame-tag">${index === 0 ? "favorito ao meme" : row.points ? `${row.points} pts` : "em obras"}</div>
+          <div class="shame-tag">${index === 0 ? "Boiolao da vez" : row.points ? `${row.points} pts` : "em obras"}</div>
         </div>
       `).join("") : `<div class="empty-state">Ainda sem dados suficientes para cornetar com justiça.</div>`}
     </div>
