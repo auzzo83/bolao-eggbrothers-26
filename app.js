@@ -530,9 +530,6 @@ function avatarColor(name) {
 function renderAvatar(name, size = 34) {
   const color = avatarColor(name);
   const initial = getParticipantInitialByName(name);
-  const summary = getParticipantSummary(participantId);
-  const styleName = getParticipantStyle(summary);
-  const badges = getParticipantBadges(participantId);
   return `<div class="avatar" style="width:${size}px;height:${size}px;background:${color};font-size:${Math.round(size*0.45)}px" title="${name}">${initial}</div>`;
 }
 
@@ -595,6 +592,9 @@ function buildParticipantModal(participantId) {
   const apostas = myPredictions.length;
   const color = avatarColor(name);
   const initial = getParticipantInitialByName(name);
+  const summary = getParticipantSummary(participantId);
+  const styleName = getParticipantStyle(summary);
+  const badges = getParticipantBadges(participantId);
 
   const finishedPreds = myPredictions.filter(p => {
     const m = getMatchById(p.match_id);
