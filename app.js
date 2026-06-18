@@ -7,6 +7,11 @@ const SHEETS = {
   RANKING: "https://docs.google.com/spreadsheets/d/e/2PACX-1vRqE3kkDDcPtqpGJ3PguUDsikJMNFbm0zdl9AJeK6e-_egbJmgYX29r50ESGoFqV0qe_aToL4aNgbBh/pub?gid=379623986&single=true&output=csv"
 };
 
+const LIVE_CONFIG = {
+  JSON_URL: "data/live-scores.json",
+  MAX_STALE_MINUTES: 20
+};
+
 // ==================== ESTADO GLOBAL ====================
 
 let participants = [];
@@ -16,6 +21,7 @@ let ranking = [];
 let charts = {};
 let currentMatchFilter = "all";
 let rankingSearch = "";
+let liveScoreMeta = null;
 
 // ==================== PROXY / FETCH ====================
 
@@ -42,6 +48,19 @@ async function fetchCsv(baseUrl, name) {
     }
   }
   throw new Error(lastError || `${name} falhou ao carregar.`);
+}
+
+async function fetchLiveScores() {
+  try {
+    const response = await fetch(`${LIVE_CONFIG.JSON_URL}?v=${Date.now()}`, { cache: "no-store" });
+    if (!response.ok) throw new Error(`Status ${response.status}`);
+    const payload = await response.json();
+    if (!payload || !Array.isArray(payload.fixtures)) throw new Error("JSON sem fixtures.");
+    return payload;
+  } catch (error) {
+    console.info("Placares ao vivo indisponíveis:", error.message);
+    return null;
+  }
 }
 
 function parseCsv(text) {
@@ -84,6 +103,91 @@ function isFilled(value) {
   return value !== null && value !== undefined && String(value).trim() !== "";
 }
 
+function normalizeName(value) {
+  return String(value || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/\b(united states|usa|us|estados unidos|eua)\b/g, "usa")
+    .replace(/\b(south korea|korea republic|coreia do sul)\b/g, "korea republic")
+    .replace(/\b(czechia|czech republic|republica tcheca)\b/g, "czechia")
+    .replace(/\b(cape verde|cabo verde|cape verde islands)\b/g, "cape verde")
+    .replace(/\b(turkiye|turkey|turquia)\b/g, "turkiye")
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
+}
+
+function sameTeam(a, b) {
+  const left = normalizeName(a);
+  const right = normalizeName(b);
+  return left && right && (left === right || left.includes(right) || right.includes(left));
+}
+
+function isApiFinished(status) {
+  return ["FT", "AET", "PEN"].includes(String(status || "").toUpperCase());
+}
+
+function isApiLive(status) {
+  return ["1H", "HT", "2H", "ET", "BT", "P", "SUSP", "INT", "LIVE"].includes(String(status || "").toUpperCase());
+}
+
+function minutesSince(isoDate) {
+  if (!isoDate) return Infinity;
+  const diff = Date.now() - new Date(isoDate).getTime();
+  return Math.round(diff / 60000);
+}
+
+function findLiveFixture(match, fixtures) {
+  return fixtures.find(item => {
+    const dateOk = !match.date || !item.date || String(item.date).slice(0, 10) === String(match.date).slice(0, 10);
+    const homeOk = sameTeam(match.home_team, item.home_team);
+    const awayOk = sameTeam(match.away_team, item.away_team);
+    return dateOk && homeOk && awayOk;
+  });
+}
+
+function applyLiveScores(payload) {
+  liveScoreMeta = payload ? payload.meta || {} : null;
+  if (!payload || !Array.isArray(payload.fixtures)) {
+    setText("liveStatus", "Sem API");
+    setText("scoreSource", "Planilha");
+    return;
+  }
+
+  const staleMinutes = minutesSince(payload.meta && payload.meta.updated_at);
+  const fresh = staleMinutes <= LIVE_CONFIG.MAX_STALE_MINUTES;
+  let liveCount = 0;
+  let matchedCount = 0;
+
+  matches = matches.map(match => {
+    const fixture = findLiveFixture(match, payload.fixtures);
+    if (!fixture) return match;
+
+    matchedCount++;
+    if (isApiLive(fixture.status_short)) liveCount++;
+
+    const liveStatus = isApiFinished(fixture.status_short)
+      ? "finished"
+      : isApiLive(fixture.status_short)
+        ? "live"
+        : match.status;
+
+    return {
+      ...match,
+      api_fixture_id: fixture.fixture_id,
+      live_status: fixture.status_short || fixture.status || "",
+      live_elapsed: fixture.elapsed || "",
+      live_updated_at: payload.meta && payload.meta.updated_at,
+      home_score: isFilled(fixture.home_score) ? fixture.home_score : match.home_score,
+      away_score: isFilled(fixture.away_score) ? fixture.away_score : match.away_score,
+      status: liveStatus
+    };
+  });
+
+  setText("liveStatus", liveCount ? `${liveCount} jogo(s) agora` : fresh ? "Atualizado" : "Atrasado");
+  setText("scoreSource", matchedCount ? "API-Football" : "Planilha");
+}
+
 function getMatchResult(home, away) {
   const h = num(home); const a = num(away);
   if (h > a) return "home";
@@ -101,7 +205,17 @@ function isFinished(match) {
   return String(match.status || "").toLowerCase() === "finished";
 }
 
-function isFuture(match) { return !isFinished(match); }
+function isLiveMatch(match) {
+  return String(match.status || "").toLowerCase() === "live";
+}
+
+function isFuture(match) { return !isFinished(match) && !isLiveMatch(match); }
+
+function getMatchStatusLabel(match) {
+  if (isFinished(match)) return "Finalizado";
+  if (isLiveMatch(match)) return match.live_elapsed ? `Ao vivo ${match.live_elapsed}'` : "Ao vivo";
+  return "Futuro";
+}
 
 function getParticipant(participantId) {
   return participants.find(p => String(p.participant_id) === String(participantId));
@@ -126,7 +240,7 @@ function getParticipantInitial(participantId) {
 // FIX: Não depender da planilha para exact_scores / correct_results.
 // Tudo é recalculado via scorePrediction() a partir dos dados reais.
 
-function getPoints(row) { return num(row.points); }
+function getPoints(row) { return isFilled(row._points) ? num(row._points) : num(row.points); }
 
 // Recalcula exatos para um participante a partir dos palpites e jogos
 function calcExactScores(participantId) {
@@ -597,7 +711,11 @@ function renderHome() {
   setText("totalParticipants", participants.length);
   setText("finishedMatches", finished);
   setText("exactScores", exactTotal);
-  setText("liveStatus", liveMatches.length > 0 ? `${liveMatches.length} jogo(s) agora` : "Nenhum jogo ao vivo");
+  if (!liveScoreMeta || liveScoreMeta.source === "not-configured") {
+    setText("liveStatus", "Configurar API");
+  } else {
+    setText("liveStatus", liveMatches.length > 0 ? `${liveMatches.length} jogo(s) agora` : "Nenhum jogo ao vivo");
+  }
 
   renderPodium();
   renderTodayMatches();
@@ -651,13 +769,17 @@ function renderPremiumMatchCard(match) {
   const awayFlag = match.away_flag || "🏳️";
   const matchNum = match.match_id ? `#${match.match_id}` : "";
   const finished = isFinished(match);
+  const live = isLiveMatch(match);
+  const hasScore = finished || live;
+  const statusLabel = getMatchStatusLabel(match);
 
   return `
-    <div class="premium-match-card ${finished ? 'finished' : ''}" onclick="openMatchModal('${match.match_id}')" style="cursor:pointer" title="Ver todos os palpites">
+    <div class="premium-match-card ${finished ? 'finished' : ''} ${live ? 'live' : ''}" onclick="openMatchModal('${match.match_id}')" style="cursor:pointer" title="Ver todos os palpites">
       <div class="premium-match-head">
         <div class="match-meta-left">
           <span class="match-num">${matchNum}</span>
           ${match.group ? `<span class="match-group">${match.group}</span>` : ""}
+          <span class="status-pill ${live ? 'status-live' : finished ? 'status-done' : 'status-future'}">${statusLabel}</span>
         </div>
         <div class="match-meta-right">
           <span class="match-time">${match.time || "-"}</span>
@@ -671,7 +793,7 @@ function renderPremiumMatchCard(match) {
           <strong>${match.home_team || "-"}</strong>
         </div>
         <div class="vs-block">
-          ${finished
+          ${hasScore
             ? `<div class="score-live">${match.home_score}<span>x</span>${match.away_score}</div>`
             : `<span class="vs-text">VS</span>`
           }
@@ -762,6 +884,8 @@ function renderBonusMatchCard(match) {
   const homeFlag = match.home_flag || "🏳️";
   const awayFlag = match.away_flag || "🏳️";
   const finished = isFinished(match);
+  const live = isLiveMatch(match);
+  const statusLabel = getMatchStatusLabel(match);
 
   const bonusPreds = getPredictionsForMatch(match.match_id).filter(isPredictionBonus);
   const exactWinners = finished
@@ -777,7 +901,7 @@ function renderBonusMatchCard(match) {
         <span class="bonus-badge">⭐ Bônus +10pts</span>
         <span class="bonus-date">${formatDateBR(match.date)}</span>
         <span class="bonus-time">${match.time || "-"}</span>
-        <span class="status-pill ${finished ? 'status-done' : 'status-future'}">${finished ? "Finalizado" : "Em breve"}</span>
+        <span class="status-pill ${live ? 'status-live' : finished ? 'status-done' : 'status-future'}">${statusLabel}</span>
       </div>
       <div class="bonus-teams">
         <div class="bonus-team">
@@ -785,7 +909,7 @@ function renderBonusMatchCard(match) {
           <span>${match.home_team}</span>
         </div>
         <div class="bonus-score">
-          ${finished ? `${match.home_score} - ${match.away_score}` : "vs"}
+          ${finished || live ? `${match.home_score} - ${match.away_score}` : "vs"}
         </div>
         <div class="bonus-team bonus-team-away">
           <span class="bonus-flag">${awayFlag}</span>
@@ -1034,9 +1158,10 @@ function filterMatches(filter, btn) {
 
 function renderMatches() {
   let filtered = matches;
+  if (currentMatchFilter === "live") filtered = matches.filter(isLiveMatch);
   if (currentMatchFilter === "finished") filtered = matches.filter(isFinished);
   if (currentMatchFilter === "future") filtered = matches.filter(isFuture);
-  setHTML("matchesList", filtered.map(renderMatchCard).join(""));
+  setHTML("matchesList", filtered.length ? filtered.map(renderMatchCard).join("") : `<div class="empty-state">Nenhum jogo neste filtro.</div>`);
 }
 
 function renderMatchCard(match) {
@@ -1045,19 +1170,21 @@ function renderMatchCard(match) {
   const homeFlag = match.home_flag || "🏳️";
   const awayFlag = match.away_flag || "🏳️";
   const finished = isFinished(match);
+  const live = isLiveMatch(match);
+  const statusLabel = getMatchStatusLabel(match);
   const isBonus = getBonusMatchIds().includes(String(match.match_id));
 
   return `
-    <div class="match-card ${finished ? 'match-finished' : 'match-future'}" onclick="openMatchModal('${match.match_id}')" style="cursor:pointer" title="Ver palpites deste jogo">
+    <div class="match-card ${finished ? 'match-finished' : live ? 'match-live' : 'match-future'}" onclick="openMatchModal('${match.match_id}')" style="cursor:pointer" title="Ver palpites deste jogo">
       <div class="match-card-header">
-        <span class="badge ${finished ? 'badge-done' : 'badge-future'}">${finished ? "✅ Finalizado" : "🕐 Futuro"}</span>
+        <span class="badge ${live ? 'badge-live' : finished ? 'badge-done' : 'badge-future'}">${statusLabel}</span>
         ${isBonus ? `<span class="badge badge-bonus">⭐ Bônus</span>` : ""}
         <span class="match-card-meta">${formatDateBR(match.date)} · ${match.time || "-"}${match.group ? " · " + match.group : ""}</span>
       </div>
       <div class="match-card-score">
         <span>${homeFlag} ${match.home_team}</span>
         <div class="match-score-center">
-          ${finished ? `<span class="big-score">${homeScore} — ${awayScore}</span>` : `<span class="vs-label">vs</span>`}
+          ${finished || live ? `<span class="big-score">${homeScore} — ${awayScore}</span>` : `<span class="vs-label">vs</span>`}
         </div>
         <span class="team-away">${match.away_team} ${awayFlag}</span>
       </div>
@@ -1609,7 +1736,14 @@ async function init() {
       fetchCsv(SHEETS.RANKING, "Ranking")
     ]);
 
-    ranking = ranking.sort((a, b) => getPoints(b) - getPoints(a));
+    applyLiveScores(await fetchLiveScores());
+
+    ranking = ranking
+      .map(row => {
+        const participantId = row.participant_id || getParticipantIdByName(row.name || row.nickname);
+        return participantId ? { ...row, participant_id: participantId, _points: calcTotalPoints(participantId) } : row;
+      })
+      .sort((a, b) => getPoints(b) - getPoints(a));
 
     renderHome();
     renderRanking();
