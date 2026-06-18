@@ -964,6 +964,201 @@ tr.top-row:first-child td { color: var(--gold); }
   line-height: 1.45;
 }
 
+/* ==================== ARENA / RODADA ==================== */
+
+.news-grid,
+.arena-grid,
+.simulator-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 14px;
+  margin-bottom: 20px;
+}
+
+.news-card,
+.arena-card,
+.sim-card,
+.profile-roast,
+.impact-panel,
+.history-board,
+.achievement-wall,
+.share-box {
+  background: linear-gradient(160deg, rgba(15,29,51,.98), rgba(11,24,41,.95));
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+
+.news-card,
+.arena-card,
+.sim-card {
+  padding: 16px;
+}
+
+.news-card {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 12px;
+  align-items: start;
+}
+
+.news-icon,
+.arena-icon {
+  font-size: 28px;
+  line-height: 1;
+}
+
+.news-card strong,
+.arena-card strong,
+.sim-card strong {
+  display: block;
+  font-size: 15px;
+  margin-bottom: 5px;
+}
+
+.news-card small,
+.arena-card small,
+.sim-card small,
+.profile-roast small {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.arena-card span,
+.sim-card span,
+.profile-roast span,
+.impact-head span {
+  display: block;
+  color: var(--muted);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  font-weight: 800;
+  margin-bottom: 6px;
+}
+
+.impact-panel { margin-bottom: 20px; overflow: hidden; }
+.impact-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 18px;
+  border-bottom: 1px solid rgba(255,255,255,.07);
+}
+.impact-head strong { font-size: 18px; }
+.impact-head small { color: var(--muted); font-size: 13px; }
+.impact-list { display: grid; }
+.impact-row {
+  display: grid;
+  grid-template-columns: auto 1fr auto auto;
+  gap: 12px;
+  align-items: center;
+  padding: 12px 18px;
+  border-bottom: 1px solid rgba(255,255,255,.06);
+  cursor: pointer;
+}
+.impact-row:last-child { border-bottom: none; }
+.impact-row:hover { background: rgba(255,255,255,.04); }
+.impact-row span { color: var(--muted); font-size: 12px; }
+.impact-row b { color: var(--muted); }
+.impact-row b.up { color: var(--green); }
+.impact-row b.down { color: var(--red); }
+
+.match-drama {
+  margin: 12px 0;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  background: rgba(250,204,21,.08);
+  border: 1px solid rgba(250,204,21,.18);
+  color: #fde68a;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.profile-roast {
+  padding: 16px;
+  margin-bottom: 18px;
+}
+.profile-roast strong { display: block; font-size: 18px; margin-bottom: 5px; }
+.profile-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+.profile-badges span,
+.achievement-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 10px;
+  border-radius: 999px;
+  background: rgba(56,189,248,.1);
+  border: 1px solid rgba(56,189,248,.22);
+  color: var(--text);
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.achievement-wall,
+.history-board {
+  overflow: hidden;
+  margin-bottom: 20px;
+}
+.achievement-row,
+.history-row {
+  display: grid;
+  grid-template-columns: auto minmax(120px, 180px) 1fr;
+  gap: 12px;
+  align-items: center;
+  padding: 13px 18px;
+  border-bottom: 1px solid rgba(255,255,255,.06);
+  cursor: pointer;
+}
+.achievement-row:last-child,
+.history-row:last-child { border-bottom: none; }
+.achievement-row:hover,
+.history-row:hover { background: rgba(255,255,255,.04); }
+.achievement-row div:last-child { display: flex; flex-wrap: wrap; gap: 6px; }
+.history-spark {
+  display: flex;
+  align-items: end;
+  gap: 3px;
+  min-height: 46px;
+}
+.history-spark i {
+  width: 7px;
+  background: linear-gradient(180deg, var(--gold), var(--brand));
+  border-radius: 999px 999px 2px 2px;
+}
+.history-row span { color: var(--gold); font-weight: 900; text-align: right; }
+
+.sim-card {
+  cursor: pointer;
+  transition: transform .2s, border-color .2s;
+}
+.sim-card:hover { transform: translateY(-2px); border-color: rgba(56,189,248,.45); }
+.sim-card .avatar { margin-bottom: 10px; }
+
+.share-box {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px;
+  margin-bottom: 20px;
+}
+.share-btn {
+  background: var(--brand);
+  color: #07111f;
+  border: none;
+  border-radius: 999px;
+  padding: 10px 16px;
+  font-weight: 900;
+  cursor: pointer;
+}
+.share-box small { color: var(--muted); }
+
 /* ==================== MODAL ==================== */
 
 .modal-overlay {
@@ -1156,6 +1351,13 @@ tr.top-row:first-child td { color: var(--gold); }
   .match-card-score { font-size: 15px; }
   .big-score { font-size: 20px; }
   .roast-grid { grid-template-columns: 1fr; }
+  .news-grid, .arena-grid, .simulator-grid { grid-template-columns: 1fr; }
+  .impact-head { flex-direction: column; }
+  .impact-row { grid-template-columns: auto 1fr; }
+  .impact-row span, .impact-row b { grid-column: 2; }
+  .achievement-row, .history-row { grid-template-columns: auto 1fr; }
+  .achievement-row div:last-child, .history-spark, .history-row span { grid-column: 2; }
+  .share-box { flex-direction: column; align-items: flex-start; }
 
   .site-footer { padding: 20px 16px; }
 }
