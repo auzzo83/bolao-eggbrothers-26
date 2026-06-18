@@ -1,8 +1,12 @@
 {
   "meta": {
-    "updated_at": null,
-    "source": "pending",
-    "message": "Aguardando primeira atualização dos placares."
+    "updated_at": "2026-06-18T21:09:55.767Z",
+    "source": "api-football",
+    "league": "1",
+    "season": "2026",
+    "date": "2026-06-18",
+    "timezone": "America/Sao_Paulo",
+    "api_results": 0
   },
   "fixtures": []
 }
