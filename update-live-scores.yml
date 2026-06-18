@@ -48,8 +48,8 @@ jobs:
             save({
               meta: {
                 updated_at: new Date().toISOString(),
-                source: "not-configured",
-                message: "API_FOOTBALL_KEY não configurada nos segredos do GitHub."
+                source: "pending",
+                message: "Aguardando configuração do segredo API_FOOTBALL_KEY no GitHub."
               },
               fixtures: []
             });
