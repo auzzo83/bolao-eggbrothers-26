@@ -1,8 +1,8 @@
 {
   "meta": {
     "updated_at": null,
-    "source": "not-configured",
-    "message": "Configure o segredo API_FOOTBALL_KEY no GitHub para ativar os placares ao vivo."
+    "source": "pending",
+    "message": "Aguardando primeira atualização dos placares."
   },
   "fixtures": []
 }
