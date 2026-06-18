@@ -530,6 +530,9 @@ function avatarColor(name) {
 function renderAvatar(name, size = 34) {
   const color = avatarColor(name);
   const initial = getParticipantInitialByName(name);
+  const summary = getParticipantSummary(participantId);
+  const styleName = getParticipantStyle(summary);
+  const badges = getParticipantBadges(participantId);
   return `<div class="avatar" style="width:${size}px;height:${size}px;background:${color};font-size:${Math.round(size*0.45)}px" title="${name}">${initial}</div>`;
 }
 
@@ -547,6 +550,8 @@ function showPage(pageId, btn) {
   if (btn) btn.classList.add("active");
   window.scrollTo({ top: 0, behavior: "smooth" });
   if (pageId === "charts") setTimeout(renderCharts, 100);
+  if (pageId === "arena") renderArena();
+  if (pageId === "round") renderRoundMode();
 }
 
 function goToPage(pageId) {
@@ -665,6 +670,17 @@ function buildParticipantModal(participantId) {
           <span class="badge-pill gold">${posEmoji} ${position}º lugar</span>
           <span class="badge-pill blue">${pts} pts totais</span>
         </div>
+      </div>
+    </div>
+
+    <div class="profile-roast">
+      <div>
+        <span>Perfil do apostador</span>
+        <strong>${styleName}</strong>
+        <small>${summary.zeroes} zero(s), ${summary.exact} cravada(s), ${summary.draws} empate(s) apostado(s). Aqui não tem julgamento, só estatística com deboche.</small>
+      </div>
+      <div class="profile-badges">
+        ${badges.map(([icon, label]) => `<span>${icon} ${label}</span>`).join("")}
       </div>
     </div>
 
@@ -918,6 +934,7 @@ function renderPremiumMatchCard(match) {
   const live = isLiveMatch(match);
   const hasScore = finished || live;
   const statusLabel = getMatchStatusLabel(match);
+  const drama = getMatchDrama(match);
 
   return `
     <div class="premium-match-card ${finished ? 'finished' : ''} ${live ? 'live' : ''}" onclick="openMatchModal('${match.match_id}')" style="cursor:pointer" title="Ver todos os palpites">
@@ -949,6 +966,8 @@ function renderPremiumMatchCard(match) {
           <strong>${match.away_team || "-"}</strong>
         </div>
       </div>
+
+      <div class="match-drama">${drama}</div>
 
       ${previewPredictions.length ? `
       <div class="premium-predictions">
@@ -1246,6 +1265,251 @@ function getCommonScore() {
   return { score: top[0], count: top[1], names: scoreNames[top[0]].join(", ") };
 }
 
+// ==================== EXPERIÊNCIAS / ZOEIRA ====================
+
+function getParticipantStyle(summary) {
+  if (!summary.finishedPredictions) return "Ainda misterioso";
+  if (summary.exact >= 3) return "Nostradamus do caraio";
+  if (summary.zeroes >= Math.max(3, summary.finishedPredictions / 2)) return "Artilheiro do zero";
+  if (summary.draws >= Math.max(3, summary.predictions * 0.35)) return "Sindicato do empate";
+  if (summary.accuracy >= 60) return "Frio e calculista";
+  return "Chutador com convicção";
+}
+
+function getParticipantBadges(participantId) {
+  const summary = getParticipantSummary(participantId);
+  const badges = [];
+  if (getRankPosition(participantId) === 1) badges.push(["👑", "Segue o líder"]);
+  if (getRankPosition(participantId) === ranking.length) badges.push(["🧯", "Lanterna oficial"]);
+  if (summary.exact > 0) badges.push(["🎯", `${summary.exact} cravada(s)`]);
+  if (summary.zeroes >= 3) badges.push(["🧊", "Colecionador de zero"]);
+  if (summary.draws >= 3) badges.push(["🤝", "Empateiro"]);
+  if (summary.accuracy >= 60) badges.push(["🧠", "Está sabendo brincar"]);
+  if (!badges.length) badges.push(["⏳", "Em construção"]);
+  return badges;
+}
+
+function getFinishedMatchesSorted() {
+  return matches.filter(isFinished).sort((a, b) => `${a.date || ""} ${a.time || ""}`.localeCompare(`${b.date || ""} ${b.time || ""}`));
+}
+
+function getMatchPoints(match) {
+  return getPredictionsForMatch(match.match_id)
+    .map(pred => ({ participantId: pred.participant_id, name: getParticipantName(pred.participant_id), points: scorePrediction(match, pred), pred }))
+    .sort((a, b) => b.points - a.points);
+}
+
+function getLastFinishedMatch() {
+  const finished = getFinishedMatchesSorted();
+  return finished[finished.length - 1] || null;
+}
+
+function getRankingBeforeMatch(matchId) {
+  const targetIndex = getFinishedMatchesSorted().findIndex(m => String(m.match_id) === String(matchId));
+  const previous = targetIndex <= 0 ? [] : getFinishedMatchesSorted().slice(0, targetIndex);
+  const rows = participants.map(p => ({
+    participantId: p.participant_id,
+    name: p.name || p.nickname || getParticipantName(p.participant_id),
+    points: previous.reduce((sum, match) => {
+      const pred = predictions.find(item => String(item.participant_id) === String(p.participant_id) && String(item.match_id) === String(match.match_id));
+      return sum + (pred ? scorePrediction(match, pred) : 0);
+    }, 0)
+  })).sort((a, b) => b.points - a.points);
+  return rows.map((row, index) => ({ ...row, position: index + 1 }));
+}
+
+function getMatchImpact(match) {
+  if (!match) return [];
+  const before = getRankingBeforeMatch(match.match_id);
+  const after = ranking.map((row, index) => ({
+    participantId: row.participant_id || getParticipantIdByName(row.name || row.nickname),
+    name: row.name || row.nickname,
+    points: getPoints(row),
+    position: index + 1
+  }));
+  return after.map(row => {
+    const old = before.find(item => String(item.participantId) === String(row.participantId));
+    const delta = old ? old.position - row.position : 0;
+    const matchPoint = getMatchPoints(match).find(item => String(item.participantId) === String(row.participantId));
+    return { ...row, delta, matchPoints: matchPoint ? matchPoint.points : 0 };
+  }).sort((a, b) => b.delta - a.delta || b.matchPoints - a.matchPoints);
+}
+
+function getAutoNews() {
+  const leader = ranking[0];
+  const lantern = ranking[ranking.length - 1];
+  const lastMatch = getLastFinishedMatch();
+  const zebra = getBiggestZebra();
+  const bestGame = getBestPointsGame();
+  const news = [];
+  if (leader) news.push({ icon: "👑", title: `${leader.name || leader.nickname} dorme líder`, text: `${getPoints(leader)} pts e o direito temporário de falar besteira no grupo.` });
+  if (lantern) news.push({ icon: "🧯", title: `${lantern.name || lantern.nickname} segura a lanterna`, text: `A luz no fim do túnel é ele mesmo carregando.` });
+  if (lastMatch) news.push({ icon: "⚽", title: `Último apito: ${lastMatch.home_team} ${lastMatch.home_score} x ${lastMatch.away_score} ${lastMatch.away_team}`, text: "A rodada mexeu no emocional e possivelmente em amizades antigas." });
+  if (zebra) news.push({ icon: "🦓", title: "Zebra detectada", text: `Só ${zebra.pct}% foram no resultado de ${zebra.match.home_team} x ${zebra.match.away_team}.` });
+  if (bestGame) news.push({ icon: "💎", title: "Jogo que mais pagou", text: `${bestGame.points} pontos distribuídos. Teve gente que saiu sorrindo sem merecer tanto.` });
+  return news.slice(0, 5);
+}
+
+function getMatchDrama(match) {
+  const stats = getPredictionResultStats(match);
+  if (!stats.total) return "Sem palpites suficientes para criar crise.";
+  const majority = getMajorityResult(match);
+  if (isFinished(match)) {
+    const real = getMatchResult(match.home_score, match.away_score);
+    const right = real === "home" ? stats.home : real === "draw" ? stats.draw : stats.away;
+    const pct = Math.round(right / stats.total * 100);
+    return pct <= 25
+      ? `Só ${pct}% acertaram o caminho. O resto vai chamar de zebra para não assumir.`
+      : `${pct}% foram no resultado certo. Rodada sem tanta tragédia, o que é raro.`;
+  }
+  return majority && majority.pct >= 65
+    ? `${majority.pct}% estão fechados com ${majority.label}. Se der ruim, a vergonha vem em grupo.`
+    : "Jogo dividido. Excelente oportunidade para alguém virar gênio depois do apito.";
+}
+
+function renderRoundMode() {
+  const today = getTodayLocal();
+  let roundMatches = matches.filter(m => m.date === today || isLiveMatch(m));
+  if (!roundMatches.length) roundMatches = matches.filter(isFuture).slice(0, 4);
+  const last = getLastFinishedMatch();
+  const impact = getMatchImpact(last).filter(item => item.delta || item.matchPoints).slice(0, 8);
+
+  setHTML("roundNews", getAutoNews().map(item => `
+    <div class="news-card">
+      <div class="news-icon">${item.icon}</div>
+      <div><strong>${item.title}</strong><small>${item.text}</small></div>
+    </div>
+  `).join(""));
+
+  setHTML("roundImpact", `
+    <div class="impact-head">
+      <div>
+        <span>Antes x Depois</span>
+        <strong>${last ? `${last.home_team} ${last.home_score} x ${last.away_score} ${last.away_team}` : "Sem jogo finalizado ainda"}</strong>
+      </div>
+      <small>${last ? "Quem subiu, quem pontuou e quem só assistiu a tragédia." : "Quando o primeiro jogo acabar, o estrago aparece aqui."}</small>
+    </div>
+    <div class="impact-list">
+      ${impact.length ? impact.map(item => `
+        <div class="impact-row" onclick="openParticipantModal('${item.participantId}')">
+          ${renderAvatar(item.name, 32)}
+          <strong>${item.name}</strong>
+          <span>${item.matchPoints} pts no jogo</span>
+          <b class="${item.delta > 0 ? 'up' : item.delta < 0 ? 'down' : ''}">${item.delta > 0 ? `+${item.delta}` : item.delta} pos.</b>
+        </div>
+      `).join("") : `<div class="empty-state">Sem impacto relevante ainda.</div>`}
+    </div>
+  `);
+
+  setHTML("roundMatches", roundMatches.map(renderPremiumMatchCard).join(""));
+}
+
+function renderArena() {
+  const summaries = participants.map(p => getParticipantSummary(p.participant_id));
+  const exactKing = [...summaries].sort((a, b) => b.exact - a.exact || b.points - a.points)[0];
+  const zeroKing = [...summaries].sort((a, b) => b.zeroes - a.zeroes || a.points - b.points)[0];
+  const drawKing = [...summaries].sort((a, b) => b.draws - a.draws)[0];
+  const leader = ranking[0];
+  const lantern = ranking[ranking.length - 1];
+  const awards = [
+    ["👑", "Dono da firma", leader && (leader.name || leader.nickname), "Está no topo, então merece elogio e perseguição."],
+    ["🧯", "Lanterna oficial", lantern && (lantern.name || lantern.nickname), "Iluminando o caminho dos outros."],
+    ["🎯", "Mãe Dináh", exactKing && exactKing.name, `${exactKing ? exactKing.exact : 0} placar(es) exato(s).`],
+    ["🧊", "Rei do zero", zeroKing && zeroKing.name, `${zeroKing ? zeroKing.zeroes : 0} jogo(s) sem pontuar.`],
+    ["🤝", "Empatador oficial", drawKing && drawKing.name, `${drawKing ? drawKing.draws : 0} empate(s) apostado(s).`]
+  ];
+
+  setHTML("arenaBadges", awards.map(([icon, title, name, text]) => `
+    <div class="arena-card">
+      <div class="arena-icon">${icon}</div>
+      <span>${title}</span>
+      <strong>${name || "A definir"}</strong>
+      <small>${text}</small>
+    </div>
+  `).join(""));
+
+  setHTML("achievementWall", participants.map(p => {
+    const name = p.name || p.nickname || getParticipantName(p.participant_id);
+    return `
+      <div class="achievement-row" onclick="openParticipantModal('${p.participant_id}')">
+        ${renderAvatar(name, 34)}
+        <strong>${name}</strong>
+        <div>${getParticipantBadges(p.participant_id).map(([icon, label]) => `<span class="achievement-badge">${icon} ${label}</span>`).join("")}</div>
+      </div>
+    `;
+  }).join(""));
+
+  renderPositionHistory();
+  renderComebackSimulator();
+}
+
+function renderPositionHistory() {
+  const finished = getFinishedMatchesSorted();
+  const top = ranking.slice(0, 8).map(row => row.participant_id || getParticipantIdByName(row.name || row.nickname));
+  setHTML("positionHistory", top.map(pid => {
+    const name = getParticipantName(pid);
+    let points = 0;
+    const steps = finished.map(match => {
+      const pred = predictions.find(p => String(p.participant_id) === String(pid) && String(p.match_id) === String(match.match_id));
+      points += pred ? scorePrediction(match, pred) : 0;
+      return points;
+    });
+    const max = Math.max(...steps, 1);
+    return `
+      <div class="history-row" onclick="openParticipantModal('${pid}')">
+        <strong>${name}</strong>
+        <div class="history-spark">${steps.length ? steps.map(value => `<i style="height:${Math.max(8, Math.round(value / max * 42))}px"></i>`).join("") : "<small>Sem jogos finalizados</small>"}</div>
+        <span>${points} pts</span>
+      </div>
+    `;
+  }).join(""));
+}
+
+function renderComebackSimulator() {
+  const remaining = matches.filter(isFuture).length;
+  const leaderPoints = ranking.length ? getPoints(ranking[0]) : 0;
+  setHTML("comebackSimulator", ranking.slice(0, 10).map(row => {
+    const name = row.name || row.nickname;
+    const pid = row.participant_id || getParticipantIdByName(name);
+    const current = getPoints(row);
+    const need = Math.max(0, leaderPoints - current + 1);
+    const exactNeeded = remaining ? Math.ceil(need / 5) : 0;
+    const text = need === 0 ? "Depende só de não fazer besteira." : remaining ? `Precisa de ${exactNeeded} cravada(s) ou uma rodada bem maluca.` : "Matematicamente virou saudade.";
+    return `
+      <div class="sim-card" onclick="openParticipantModal('${pid}')">
+        ${renderAvatar(name, 34)}
+        <strong>${name}</strong>
+        <span>${current} pts</span>
+        <small>${text}</small>
+      </div>
+    `;
+  }).join(""));
+}
+
+function getRoundSummaryText() {
+  const leader = ranking[0];
+  const lantern = ranking[ranking.length - 1];
+  const last = getLastFinishedMatch();
+  const exactKing = participants.map(p => getParticipantSummary(p.participant_id)).sort((a, b) => b.exact - a.exact)[0];
+  return [
+    "Resumo Eggbrothers 26:",
+    leader ? `${leader.name || leader.nickname} lidera com ${getPoints(leader)} pts.` : "",
+    lantern ? `${lantern.name || lantern.nickname} segura a lanterna.` : "",
+    last ? `Último jogo: ${last.home_team} ${last.home_score} x ${last.away_score} ${last.away_team}.` : "",
+    exactKing ? `${exactKing.name} é o atual caçador de cravadas (${exactKing.exact}).` : ""
+  ].filter(Boolean).join(" ");
+}
+
+async function copyRoundSummary() {
+  const text = getRoundSummaryText();
+  try {
+    await navigator.clipboard.writeText(text);
+    setText("shareStatus", "Resumo copiado para o WhatsApp.");
+  } catch (error) {
+    setText("shareStatus", text);
+  }
+}
+
 // ==================== RANKING ====================
 
 function filterRanking(query) {
@@ -1319,6 +1583,7 @@ function renderMatchCard(match) {
   const live = isLiveMatch(match);
   const statusLabel = getMatchStatusLabel(match);
   const isBonus = getBonusMatchIds().includes(String(match.match_id));
+  const drama = getMatchDrama(match);
 
   return `
     <div class="match-card ${finished ? 'match-finished' : live ? 'match-live' : 'match-future'}" onclick="openMatchModal('${match.match_id}')" style="cursor:pointer" title="Ver palpites deste jogo">
@@ -1334,6 +1599,7 @@ function renderMatchCard(match) {
         </div>
         <span class="team-away">${match.away_team} ${awayFlag}</span>
       </div>
+      <div class="match-drama">${drama}</div>
       ${renderPredictionSummary(match)}
     </div>
   `;
@@ -1673,23 +1939,31 @@ function renderCharts() {
     Object.values(charts).forEach(c => c && c.destroy && c.destroy());
     charts = {};
   }
-  renderChartsRoast();
-  renderChartsStory();
-  renderShameBoard();
-  renderPointsChart();
-  renderExactChart();
-  renderCorrectChart();
-  renderPredictionResultChart();
-  renderMatchStatusChart();
-  renderPointsExactChart();
-  renderPredictionVolumeChart();
-  renderFinishedGoalsChart();
-  renderTopCountriesChart();
-  renderTopResultsChart();
+  safeRender("Resenha", renderChartsRoast);
+  safeRender("Resumo", renderChartsStory);
+  safeRender("Corneta", renderShameBoard);
+  safeRender("Pontos", renderPointsChart);
+  safeRender("Exatos", renderExactChart);
+  safeRender("Acertos", renderCorrectChart);
+  safeRender("Distribuição", renderPredictionResultChart);
+  safeRender("Status", renderMatchStatusChart);
+  safeRender("Correlação", renderPointsExactChart);
+  safeRender("Volume", renderPredictionVolumeChart);
+  safeRender("Gols", renderFinishedGoalsChart);
+  safeRender("Países", renderTopCountriesChart);
+  safeRender("Placares", renderTopResultsChart);
   chartsRendered = true;
 }
 
 function getTopRanking(limit = 15) { return ranking.slice(0, limit); }
+
+function safeRender(label, fn) {
+  try {
+    fn();
+  } catch (error) {
+    console.error(`Erro ao renderizar ${label}:`, error);
+  }
+}
 
 function renderChartsRoast() {
   const summaries = participants.map(p => getParticipantSummary(p.participant_id));
@@ -1709,7 +1983,7 @@ function renderChartsRoast() {
       tone: "gold",
       icon: "👑",
       label: "Dono momentâneo da bola",
-      title: leader ? `${leader.name || leader.nickname} Segue o líder : "Sem líder ainda",
+      title: leader ? `${leader.name || leader.nickname}: segue o líder` : "Sem líder ainda",
       text: leader ? `${getPoints(leader)} pts. Média da galera: ${avgPoints}. Está confortável, mas pode peidar.` : "Quando tiver pontuação, a gente conversa.",
       action: leaderId ? `openParticipantModal('${leaderId}')` : ""
     },
@@ -1718,7 +1992,7 @@ function renderChartsRoast() {
       icon: "🧯",
       label: "Lanterna oficial",
       title: lantern ? `${lantern.name || lantern.nickname} está iluminando o caminho` : "Sem lanterna ainda",
-      text: lantern ? `${getPoints(lantern)} pts e ${leaderGap} atrás do líder. Desiste ai...` : "A vergonha será calculada com carinho.",
+      text: lantern ? `${getPoints(lantern)} pts e ${leaderGap} atrás do líder. Desiste aí... ou crava três seguidas só para calar geral.` : "A vergonha será calculada com carinho.",
       action: lanternId ? `openParticipantModal('${lanternId}')` : ""
     },
     {
@@ -1826,7 +2100,7 @@ function renderShameBoard() {
         <span>Mural da Corneta</span>
         <strong>Quem está devendo explicações</strong>
       </div>
-      <small>Critério científico: zeros, baixo aproveitamento e pouca cravada. Ruim pa carai.</small>
+      <small>Critério científico: zeros, baixo aproveitamento e pouca cravada. Ruim pa carai, mas com metodologia.</small>
     </div>
     <div class="shame-list">
       ${rows.length ? rows.map((row, index) => `
@@ -1837,7 +2111,7 @@ function renderShameBoard() {
             <strong>${row.name}</strong>
             <small>${row.zeroes} zero(s), ${row.exact} exato(s), ${row.accuracy}% aproveitamento</small>
           </div>
-          <div class="shame-tag">${index === 0 ? "Boiolao da vez" : row.points ? `${row.points} pts` : "em obras"}</div>
+          <div class="shame-tag">${index === 0 ? "meme da vez" : row.points ? `${row.points} pts` : "em obras"}</div>
         </div>
       `).join("") : `<div class="empty-state">Ainda sem dados suficientes para cornetar com justiça.</div>`}
     </div>
