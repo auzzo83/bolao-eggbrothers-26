@@ -205,12 +205,22 @@ function getResultLabel(result, match) {
   return "Empate";
 }
 
+function getStatus(match) {
+  return String(match && match.status ? match.status : "").trim().toLowerCase();
+}
+
+function hasFinalScore(match) {
+  return isFilled(match && match.home_score) && isFilled(match && match.away_score);
+}
+
 function isFinished(match) {
-  return String(match.status || "").toLowerCase() === "finished";
+  const status = getStatus(match);
+  return ["finished", "finalizado", "ft", "aet", "pen"].includes(status) || hasFinalScore(match);
 }
 
 function isLiveMatch(match) {
-  return String(match.status || "").toLowerCase() === "live";
+  const status = getStatus(match);
+  return ["live", "ao vivo", "1h", "ht", "2h", "et", "bt", "p", "susp", "int"].includes(status) && !isFinished(match);
 }
 
 function isFuture(match) { return !isFinished(match) && !isLiveMatch(match); }
@@ -708,7 +718,7 @@ function renderHome() {
 
   // FIX: recalcula exactTotal localmente
   const exactTotal = participants.reduce((sum, p) => sum + calcExactScores(p.participant_id), 0);
-  const liveMatches = matches.filter(m => String(m.status || "").toLowerCase() === "live");
+  const liveMatches = matches.filter(isLiveMatch);
 
   setText("leaderName", leader ? leader.name || leader.nickname || "-" : "-");
   setText("leaderPoints", leader ? `${getPoints(leader)} pts` : "- pts");
@@ -1610,7 +1620,7 @@ function renderPredictionResultChart() {
 function renderMatchStatusChart() {
   const statusCount = {};
   matches.forEach(m => {
-    const s = m.status || "future";
+    const s = isFinished(m) ? "Finalizados" : isLiveMatch(m) ? "Ao vivo" : "Próximos";
     statusCount[s] = (statusCount[s] || 0) + 1;
   });
   createChart("matchStatusChart", {
