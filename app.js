@@ -638,7 +638,7 @@ function saveScoreMemory(memory) {
 function detectGoalCelebration() {
   const previous = getScoreMemory();
   const next = {};
-  let goalDetected = false;
+  const goals = [];
 
   matches.forEach(match => {
     if (!isFilled(match.home_score) && !isFilled(match.away_score)) return;
@@ -648,11 +648,13 @@ function detectGoalCelebration() {
     const old = previous[key];
     next[key] = { home, away };
     if (!old) return;
-    if (home > num(old.home) || away > num(old.away)) goalDetected = true;
+    if (home > num(old.home) || away > num(old.away)) {
+      goals.push(`${match.home_team} ${home} x ${away} ${match.away_team}`);
+    }
   });
 
   saveScoreMemory({ ...previous, ...next });
-  if (goalDetected) playGoalCheer();
+  if (goals.length) playGoalCheer(goals[0]);
 }
 
 function playGoalCheer() {
@@ -694,6 +696,62 @@ function playGoalCheer() {
 
   [392, 494, 587, 784].forEach((freq, i) => {
     playChipNote(freq, now + i * 0.08, 0.24, "square", 0.18);
+  });
+}
+
+function showGoalToast(label = "Gol no jogo!") {
+  let toast = document.getElementById("goalCheerToast");
+  if (!toast) {
+    toast = document.createElement("div");
+    toast.id = "goalCheerToast";
+    toast.className = "goal-cheer-toast";
+    document.body.appendChild(toast);
+  }
+  toast.innerHTML = `<strong>GOOOOL!</strong><span>${label}</span>`;
+  toast.classList.add("show");
+  window.setTimeout(() => toast.classList.remove("show"), 3200);
+}
+
+function playGoalCheer(label = "Gol no jogo!") {
+  showGoalToast(label);
+  if (!arcadeAudio) arcadeAudio = createArcadeAudio();
+  if (!arcadeAudio || arcadeAudio.ctx.state !== "running") {
+    pendingGoalCheer = true;
+    setText("arcadeMusicBtn", "GOL! CLIQUE AQUI");
+    return;
+  }
+
+  pendingGoalCheer = false;
+  const { ctx } = arcadeAudio;
+  const now = ctx.currentTime + 0.02;
+  const cheerGain = ctx.createGain();
+  cheerGain.gain.setValueAtTime(0.0001, now);
+  cheerGain.gain.exponentialRampToValueAtTime(0.38, now + 0.1);
+  cheerGain.gain.exponentialRampToValueAtTime(0.22, now + 1.5);
+  cheerGain.gain.exponentialRampToValueAtTime(0.0001, now + 3.2);
+  cheerGain.connect(ctx.destination);
+
+  const bufferSize = Math.floor(ctx.sampleRate * 3.2);
+  const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+  const data = buffer.getChannelData(0);
+  for (let i = 0; i < bufferSize; i++) {
+    const wave = Math.sin(i / 18) * 0.35 + Math.sin(i / 43) * 0.2;
+    data[i] = ((Math.random() * 2 - 1) * 0.65 + wave) * (1 - i / bufferSize * 0.25);
+  }
+
+  const noise = ctx.createBufferSource();
+  const band = ctx.createBiquadFilter();
+  band.type = "bandpass";
+  band.frequency.value = 780;
+  band.Q.value = 0.55;
+  noise.buffer = buffer;
+  noise.connect(band);
+  band.connect(cheerGain);
+  noise.start(now);
+  noise.stop(now + 3.2);
+
+  [392, 494, 587, 784, 988, 784].forEach((freq, i) => {
+    playChipNote(freq, now + i * 0.075, 0.22, "square", 0.28);
   });
 }
 
