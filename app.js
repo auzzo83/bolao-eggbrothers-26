@@ -1141,8 +1141,10 @@ function renderPodium() {
 
 function renderTodayMatches() {
   const today = getTodayLocal();
-  let todayMatches = matches.filter(m => m.date === today);
-  if (!todayMatches.length) todayMatches = matches.filter(isFuture).slice(0, 3);
+  const liveMatches = matches.filter(isLiveMatch);
+  const dayMatches = matches.filter(m => m.date === today && !isLiveMatch(m));
+  let todayMatches = sortMatchesForArcade([...liveMatches, ...dayMatches]);
+  if (!todayMatches.length) todayMatches = sortMatchesForArcade(matches.filter(isFuture)).slice(0, 3);
   setHTML("todayMatches",
     todayMatches.length
       ? todayMatches.map(renderPremiumMatchCard).join("")
