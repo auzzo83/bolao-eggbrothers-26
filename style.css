@@ -2110,3 +2110,306 @@ tr:hover td,
     grid-column: 2;
   }
 }
+
+/* ==================== INTERACTIVE ARCADE UPGRADES ==================== */
+
+.arcade-music-btn {
+  border: 2px solid rgba(255,240,74,.6);
+  border-radius: var(--radius-sm);
+  background: linear-gradient(180deg, rgba(255,240,74,.95), rgba(255,138,0,.95));
+  color: #140900;
+  cursor: pointer;
+  font-family: var(--pixel);
+  font-size: 12px;
+  min-height: 42px;
+  padding: 10px 14px;
+  box-shadow: 0 5px 0 rgba(0,0,0,.55), 0 0 18px rgba(255,240,74,.16);
+}
+
+.arcade-music-btn:hover {
+  transform: translateY(-1px);
+  filter: saturate(1.25);
+}
+
+.match-control-panel {
+  display: grid;
+  grid-template-columns: minmax(220px, 1.35fr) repeat(3, minmax(150px, .8fr)) minmax(120px, .45fr);
+  gap: 12px;
+  margin: 0 0 18px;
+  padding: 14px;
+  border: 2px solid rgba(0,229,255,.32);
+  border-radius: var(--radius);
+  background:
+    linear-gradient(180deg, rgba(3,20,15,.92), rgba(0,0,0,.36)),
+    repeating-linear-gradient(90deg, rgba(85,255,127,.045) 0 1px, transparent 1px 12px);
+  box-shadow: var(--shadow), inset 0 0 24px rgba(0,229,255,.04);
+}
+
+.arcade-control {
+  display: grid;
+  gap: 6px;
+}
+
+.arcade-control label,
+.arcade-counter small,
+.match-winners-line span {
+  color: var(--green);
+  font-family: var(--pixel);
+  font-size: 11px;
+  text-transform: uppercase;
+}
+
+.arcade-control input,
+.arcade-control select {
+  width: 100%;
+  min-height: 42px;
+  border: 2px solid rgba(0,229,255,.35);
+  border-radius: var(--radius-sm);
+  background: #030807;
+  color: var(--text);
+  font: 700 14px var(--body);
+  padding: 9px 10px;
+  outline: none;
+  box-shadow: inset 0 0 18px rgba(0,229,255,.045);
+}
+
+.arcade-control input:focus,
+.arcade-control select:focus {
+  border-color: var(--gold);
+  box-shadow: 0 0 0 3px rgba(255,240,74,.12), inset 0 0 18px rgba(255,240,74,.05);
+}
+
+.arcade-counter {
+  display: grid;
+  place-items: center;
+  text-align: center;
+  border: 2px solid rgba(255,49,255,.3);
+  border-radius: var(--radius-sm);
+  background: rgba(255,49,255,.08);
+}
+
+.arcade-counter span {
+  color: var(--gold);
+  font-family: var(--display);
+  font-size: 22px;
+  line-height: 1;
+}
+
+.match-arcade-strip {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  margin: 12px 0;
+}
+
+.match-arcade-strip button,
+.match-winners-line button,
+.arcade-stat-card {
+  border: 1px solid rgba(0,229,255,.32);
+  border-radius: var(--radius-sm);
+  background:
+    linear-gradient(180deg, rgba(9,35,25,.96), rgba(2,8,6,.96));
+  color: var(--text);
+  cursor: pointer;
+  text-align: left;
+  box-shadow: 0 4px 0 rgba(0,0,0,.45), inset 0 -2px 0 rgba(0,0,0,.35);
+}
+
+.match-arcade-strip button {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+  padding: 9px;
+  text-align: center;
+}
+
+.match-arcade-strip button b {
+  color: var(--gold);
+  font-family: var(--pixel);
+  font-size: 17px;
+  line-height: 1;
+}
+
+.match-arcade-strip button span {
+  color: var(--muted);
+  font-size: 11px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.match-arcade-strip button:hover,
+.match-winners-line button:hover,
+.arcade-stat-card:hover {
+  border-color: var(--gold);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 0 rgba(0,0,0,.45), 0 0 16px rgba(255,240,74,.12);
+}
+
+.match-winners-line {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 8px 0 12px;
+  padding: 9px;
+  border: 1px dashed rgba(255,240,74,.35);
+  border-radius: var(--radius-sm);
+  background: rgba(255,240,74,.06);
+}
+
+.match-winners-line button {
+  color: var(--gold);
+  font-family: var(--pixel);
+  font-size: 11px;
+  padding: 6px 8px;
+}
+
+.arcade-stat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 14px;
+}
+
+.arcade-stat-card {
+  min-height: 150px;
+  padding: 16px;
+  display: grid;
+  align-content: space-between;
+  gap: 8px;
+  position: relative;
+  overflow: hidden;
+}
+
+.arcade-stat-card::after {
+  content: "";
+  position: absolute;
+  width: 90px;
+  height: 90px;
+  right: -35px;
+  top: -35px;
+  border: 2px solid rgba(0,229,255,.18);
+  transform: rotate(20deg);
+}
+
+.arcade-stat-card span {
+  color: var(--green);
+  font-family: var(--pixel);
+  font-size: 11px;
+}
+
+.arcade-stat-card strong {
+  font-size: 17px;
+  line-height: 1.25;
+}
+
+.arcade-stat-card b {
+  color: var(--gold);
+  font-family: var(--display);
+  font-size: 24px;
+  line-height: 1;
+}
+
+.arcade-stat-card small {
+  color: var(--muted);
+  line-height: 1.35;
+}
+
+.arcade-stat-card.danger {
+  border-color: rgba(255,49,88,.46);
+  box-shadow: 0 4px 0 rgba(0,0,0,.45), 0 0 20px rgba(255,49,88,.09);
+}
+
+.match-card.match-live,
+.premium-match-card.live {
+  border-color: rgba(255,49,88,.9);
+  animation: liveCabinetGlow 1s steps(2, end) infinite, liveTinyShake 2.4s steps(2, end) infinite;
+}
+
+.match-card.match-live::after,
+.premium-match-card.live::after {
+  content: "LIVE";
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  color: #ffd7de;
+  background: rgba(255,49,88,.22);
+  border: 1px solid rgba(255,49,88,.7);
+  border-radius: 4px;
+  font-family: var(--display);
+  font-size: 9px;
+  padding: 6px 8px;
+  text-shadow: 0 0 10px rgba(255,49,88,.95);
+  animation: arcadeBlink .7s steps(2, end) infinite;
+  z-index: 2;
+}
+
+@keyframes liveTinyShake {
+  0%, 93%, 100% { transform: translate(0, 0); }
+  94% { transform: translate(1px, 0); }
+  96% { transform: translate(-1px, 1px); }
+  98% { transform: translate(0, -1px); }
+}
+
+@media (max-width: 900px) {
+  .match-control-panel {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .arcade-counter {
+    min-height: 58px;
+  }
+}
+
+@media (max-width: 560px) {
+  .hero-meta {
+    gap: 10px;
+  }
+
+  .arcade-music-btn {
+    width: 100%;
+    font-size: 11px;
+  }
+
+  .nav {
+    gap: 8px;
+    scroll-snap-type: x proximity;
+  }
+
+  .nav-btn {
+    scroll-snap-align: start;
+    min-width: max-content;
+  }
+
+  .match-control-panel {
+    grid-template-columns: 1fr;
+    padding: 12px;
+  }
+
+  .match-arcade-strip {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .arcade-stat-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .arcade-stat-card {
+    min-height: 128px;
+  }
+
+  .kpi-grid,
+  .two-column-grid,
+  .news-grid,
+  .arena-grid,
+  .simulator-grid,
+  .curiosity-grid,
+  .bonus-grid {
+    gap: 12px;
+  }
+
+  th,
+  td {
+    padding: 12px 10px;
+  }
+}
