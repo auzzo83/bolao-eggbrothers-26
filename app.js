@@ -20,8 +20,14 @@ let predictions = [];
 let ranking = [];
 let charts = {};
 let currentMatchFilter = "all";
+let matchGroupFilter = "all";
+let matchBonusFilter = "all";
+let matchSearch = "";
+let matchSort = "latest";
 let rankingSearch = "";
 let liveScoreMeta = null;
+let arcadeAudio = null;
+let arcadeMusicOn = false;
 
 // ==================== PROXY / FETCH ====================
 
@@ -554,6 +560,66 @@ function showPage(pageId, btn) {
 function goToPage(pageId) {
   const btn = document.querySelector(`.nav-btn[onclick*="'${pageId}'"]`);
   showPage(pageId, btn);
+}
+
+// ==================== ARCADE SOUND ====================
+
+function createArcadeAudio() {
+  const AudioCtx = window.AudioContext || window.webkitAudioContext;
+  if (!AudioCtx) return null;
+  const ctx = new AudioCtx();
+  const gain = ctx.createGain();
+  gain.gain.value = 0.035;
+  gain.connect(ctx.destination);
+  return { ctx, gain, timers: [] };
+}
+
+function playChipNote(freq, start, duration, type = "square") {
+  if (!arcadeAudio) return;
+  const { ctx, gain } = arcadeAudio;
+  const osc = ctx.createOscillator();
+  const env = ctx.createGain();
+  osc.type = type;
+  osc.frequency.value = freq;
+  env.gain.setValueAtTime(0.0001, start);
+  env.gain.exponentialRampToValueAtTime(0.75, start + 0.015);
+  env.gain.exponentialRampToValueAtTime(0.0001, start + duration);
+  osc.connect(env);
+  env.connect(gain);
+  osc.start(start);
+  osc.stop(start + duration + 0.02);
+}
+
+function scheduleArcadeLoop() {
+  if (!arcadeAudio || !arcadeMusicOn) return;
+  const { ctx } = arcadeAudio;
+  const now = ctx.currentTime + 0.04;
+  const melody = [659, 784, 988, 784, 659, 523, 587, 659, 784, 659, 587, 523, 440, 523, 659, 784];
+  const bass = [131, 131, 196, 196, 165, 165, 220, 220];
+  melody.forEach((freq, i) => playChipNote(freq, now + i * 0.18, 0.105, i % 4 === 0 ? "triangle" : "square"));
+  bass.forEach((freq, i) => playChipNote(freq, now + i * 0.36, 0.15, "square"));
+  const timer = window.setTimeout(scheduleArcadeLoop, 2880);
+  arcadeAudio.timers.push(timer);
+}
+
+async function toggleArcadeMusic(force) {
+  if (force === false || arcadeMusicOn) {
+    arcadeMusicOn = false;
+    if (arcadeAudio) {
+      arcadeAudio.timers.forEach(clearTimeout);
+      arcadeAudio.timers = [];
+      arcadeAudio.gain.gain.setTargetAtTime(0.0001, arcadeAudio.ctx.currentTime, 0.05);
+    }
+    setText("arcadeMusicBtn", "♪ START SOUND");
+    return;
+  }
+  if (!arcadeAudio) arcadeAudio = createArcadeAudio();
+  if (!arcadeAudio) return;
+  await arcadeAudio.ctx.resume();
+  arcadeAudio.gain.gain.setTargetAtTime(0.035, arcadeAudio.ctx.currentTime, 0.05);
+  arcadeMusicOn = true;
+  setText("arcadeMusicBtn", "♪ SOUND ON");
+  scheduleArcadeLoop();
 }
 
 // ==================== DOM HELPERS ====================
@@ -1566,11 +1632,100 @@ function filterMatches(filter, btn) {
   renderMatches();
 }
 
+function setMatchControl(key, value) {
+  if (key === "group") matchGroupFilter = value;
+  if (key === "bonus") matchBonusFilter = value;
+  if (key === "search") matchSearch = String(value || "").toLowerCase();
+  if (key === "sort") matchSort = value;
+  renderMatches();
+}
+
+function getMatchTimestamp(match) {
+  const parsed = new Date(`${match.date || "1900-01-01"}T${match.time || "00:00"}`);
+  return Number.isNaN(parsed.getTime()) ? 0 : parsed.getTime();
+}
+
+function getMatchTotalPoints(match) {
+  return getPredictionsForMatch(match.match_id).reduce((sum, pred) => sum + scorePrediction(match, pred), 0);
+}
+
+function getMatchExactWinners(match) {
+  if (!isFinished(match)) return [];
+  return getPredictionsForMatch(match.match_id)
+    .filter(pred => num(pred.pred_home) === num(match.home_score) && num(pred.pred_away) === num(match.away_score))
+    .map(pred => ({ participantId: pred.participant_id, name: getParticipantName(pred.participant_id), points: scorePrediction(match, pred) }));
+}
+
+function getMatchDramaScore(match) {
+  const stats = getPredictionResultStats(match);
+  if (!stats.total) return 0;
+  const spread = Math.max(stats.homePct, stats.drawPct, stats.awayPct) - Math.min(stats.homePct, stats.drawPct, stats.awayPct);
+  return (100 - spread) + (isFinished(match) ? Math.max(0, 20 - getMatchExactWinners(match).length * 3) : 0);
+}
+
+function sortMatchesForArcade(list) {
+  return [...list].sort((a, b) => {
+    if (matchSort === "oldest") return getMatchTimestamp(a) - getMatchTimestamp(b);
+    if (matchSort === "points") return getMatchTotalPoints(b) - getMatchTotalPoints(a);
+    if (matchSort === "drama") return getMatchDramaScore(b) - getMatchDramaScore(a);
+    const weight = match => isLiveMatch(match) ? 4 : isFinished(match) ? 3 : 1;
+    const statusDiff = weight(b) - weight(a);
+    if (statusDiff) return statusDiff;
+    if (isFuture(a) && isFuture(b)) return getMatchTimestamp(a) - getMatchTimestamp(b);
+    return getMatchTimestamp(b) - getMatchTimestamp(a);
+  });
+}
+
+function renderMatchAdvancedFilters(filteredCount) {
+  const groups = [...new Set(matches.map(m => m.group).filter(Boolean))].sort();
+  setHTML("matchAdvancedFilters", `
+    <div class="arcade-control">
+      <label>Buscar</label>
+      <input value="${matchSearch}" oninput="setMatchControl('search', this.value)" placeholder="Time, grupo ou #jogo">
+    </div>
+    <div class="arcade-control">
+      <label>Grupo</label>
+      <select onchange="setMatchControl('group', this.value)">
+        <option value="all"${matchGroupFilter === "all" ? " selected" : ""}>Todos</option>
+        ${groups.map(group => `<option value="${group}"${matchGroupFilter === group ? " selected" : ""}>${group}</option>`).join("")}
+      </select>
+    </div>
+    <div class="arcade-control">
+      <label>Tipo</label>
+      <select onchange="setMatchControl('bonus', this.value)">
+        <option value="all"${matchBonusFilter === "all" ? " selected" : ""}>Todos</option>
+        <option value="bonus"${matchBonusFilter === "bonus" ? " selected" : ""}>Bonus</option>
+        <option value="normal"${matchBonusFilter === "normal" ? " selected" : ""}>Normal</option>
+      </select>
+    </div>
+    <div class="arcade-control">
+      <label>Ordem</label>
+      <select onchange="setMatchControl('sort', this.value)">
+        <option value="latest"${matchSort === "latest" ? " selected" : ""}>Ultimo realizado primeiro</option>
+        <option value="oldest"${matchSort === "oldest" ? " selected" : ""}>Calendario</option>
+        <option value="points"${matchSort === "points" ? " selected" : ""}>Mais pontos</option>
+        <option value="drama"${matchSort === "drama" ? " selected" : ""}>Mais drama</option>
+      </select>
+    </div>
+    <div class="arcade-counter"><span>${filteredCount}</span><small>jogos no visor</small></div>
+  `);
+}
+
 function renderMatches() {
-  let filtered = matches;
+  let filtered = [...matches];
   if (currentMatchFilter === "live") filtered = matches.filter(isLiveMatch);
   if (currentMatchFilter === "finished") filtered = matches.filter(isFinished);
   if (currentMatchFilter === "future") filtered = matches.filter(isFuture);
+  if (matchGroupFilter !== "all") filtered = filtered.filter(match => match.group === matchGroupFilter);
+  if (matchBonusFilter !== "all") {
+    const bonusIds = getBonusMatchIds();
+    filtered = filtered.filter(match => matchBonusFilter === "bonus" ? bonusIds.includes(String(match.match_id)) : !bonusIds.includes(String(match.match_id)));
+  }
+  if (matchSearch) {
+    filtered = filtered.filter(match => `${match.match_id || ""} ${match.home_team || ""} ${match.away_team || ""} ${match.group || ""}`.toLowerCase().includes(matchSearch));
+  }
+  filtered = sortMatchesForArcade(filtered);
+  renderMatchAdvancedFilters(filtered.length);
   setHTML("matchesList", filtered.length ? filtered.map(renderMatchCard).join("") : `<div class="empty-state">Nenhum jogo neste filtro.</div>`);
 }
 
@@ -1584,6 +1739,10 @@ function renderMatchCard(match) {
   const statusLabel = getMatchStatusLabel(match);
   const isBonus = getBonusMatchIds().includes(String(match.match_id));
   const drama = getMatchDrama(match);
+  const stats = getPredictionResultStats(match);
+  const totalPts = getMatchTotalPoints(match);
+  const exactWinners = getMatchExactWinners(match);
+  const majority = getMajorityResult(match);
 
   return `
     <div class="match-card ${finished ? 'match-finished' : live ? 'match-live' : 'match-future'}" onclick="openMatchModal('${match.match_id}')" style="cursor:pointer" title="Ver palpites deste jogo">
@@ -1600,6 +1759,18 @@ function renderMatchCard(match) {
         <span class="team-away">${match.away_team} ${awayFlag}</span>
       </div>
       <div class="match-drama">${drama}</div>
+      <div class="match-arcade-strip">
+        <button onclick="openMatchModal('${match.match_id}');event.stopPropagation()"><b>${stats.total}</b><span>palpites</span></button>
+        <button onclick="openMatchModal('${match.match_id}');event.stopPropagation()"><b>${totalPts}</b><span>pts</span></button>
+        <button onclick="openMatchModal('${match.match_id}');event.stopPropagation()"><b>${exactWinners.length}</b><span>cravadas</span></button>
+        <button onclick="openMatchModal('${match.match_id}');event.stopPropagation()"><b>${majority ? majority.pct : 0}%</b><span>${majority ? majority.label : "sem maioria"}</span></button>
+      </div>
+      ${exactWinners.length ? `
+        <div class="match-winners-line">
+          <span>PERFECT HIT</span>
+          ${exactWinners.slice(0, 4).map(item => `<button onclick="openParticipantModal('${item.participantId}');event.stopPropagation()">${item.name} +${item.points}</button>`).join("")}
+        </div>
+      ` : ""}
       ${renderPredictionSummary(match)}
     </div>
   `;
@@ -1765,9 +1936,95 @@ function renderStats() {
     </div>
   `);
 
+  renderArcadeStats();
   renderAccuracyBoards();
   renderSpecialInsights();
   renderComebackTable();
+}
+
+function getStatsLeaders() {
+  const summaries = participants.map(p => getParticipantSummary(p.participant_id));
+  const bestAccuracy = [...summaries].filter(s => s.finishedPredictions >= 2).sort((a, b) => b.accuracy - a.accuracy || b.points - a.points)[0];
+  const mostZeroes = [...summaries].sort((a, b) => b.zeroes - a.zeroes || a.points - b.points)[0];
+  const mostDraws = [...summaries].sort((a, b) => b.draws - a.draws)[0];
+  return { bestAccuracy, mostZeroes, mostDraws };
+}
+
+function getExactRate() {
+  const finishedPreds = predictions.filter(pred => {
+    const match = getMatchById(pred.match_id);
+    return match && isFinished(match);
+  });
+  if (!finishedPreds.length) return 0;
+  const exact = finishedPreds.filter(pred => {
+    const match = getMatchById(pred.match_id);
+    const pts = scorePrediction(match, pred);
+    return pts === 5 || pts === 10;
+  }).length;
+  return Math.round(exact / finishedPreds.length * 100);
+}
+
+function getAverageGoals() {
+  const finished = matches.filter(isFinished);
+  if (!finished.length) return 0;
+  const goals = finished.reduce((sum, match) => sum + num(match.home_score) + num(match.away_score), 0);
+  return (goals / finished.length).toFixed(1);
+}
+
+function renderArcadeStats() {
+  const leader = ranking[0];
+  const vice = ranking[1];
+  const leaderGap = leader && vice ? getPoints(leader) - getPoints(vice) : 0;
+  const totalPoints = matches.filter(isFinished).reduce((sum, match) => sum + getMatchTotalPoints(match), 0);
+  const zebra = getBiggestZebra();
+  const bestGame = getBestPointsGame();
+  const commonScore = getCommonScore();
+  const consensus = getHighestConsensus();
+  const { bestAccuracy, mostZeroes, mostDraws } = getStatsLeaders();
+
+  setHTML("statsArcadePanel", `
+    ${leader ? `
+      <button class="arcade-stat-card" onclick="openParticipantModal('${leader.participant_id || getParticipantIdByName(leader.name || leader.nickname)}')">
+        <span>PLAYER 1</span><strong>${leader.name || leader.nickname}</strong><b>+${leaderGap}</b><small>pontos de vantagem</small>
+      </button>` : ""}
+    <button class="arcade-stat-card" onclick="goToPage('charts')">
+      <span>TOTAL SCORE</span><strong>${totalPoints}</strong><b>PTS</b><small>distribuidos nos jogos finalizados</small>
+    </button>
+    <button class="arcade-stat-card" onclick="goToPage('predictions')">
+      <span>PERFECT RATE</span><strong>${getExactRate()}%</strong><b>CRAVADA</b><small>taxa de placar exato nos palpites ja revelados</small>
+    </button>
+    ${bestAccuracy ? `
+      <button class="arcade-stat-card" onclick="openParticipantModal('${bestAccuracy.participantId}')">
+        <span>HOT HAND</span><strong>${bestAccuracy.name}</strong><b>${bestAccuracy.accuracy}%</b><small>melhor aproveitamento com jogos finalizados</small>
+      </button>` : ""}
+    ${zebra ? `
+      <button class="arcade-stat-card danger" onclick="openMatchModal('${zebra.match.match_id}')">
+        <span>BOSS FIGHT</span><strong>${zebra.match.home_team} x ${zebra.match.away_team}</strong><b>${zebra.pct}%</b><small>foram no resultado vencedor</small>
+      </button>` : ""}
+    ${bestGame ? `
+      <button class="arcade-stat-card" onclick="openMatchModal('${bestGame.match.match_id}')">
+        <span>JACKPOT</span><strong>${bestGame.match.home_team} x ${bestGame.match.away_team}</strong><b>${bestGame.points}</b><small>pontos gerados nesse jogo</small>
+      </button>` : ""}
+    ${commonScore ? `
+      <button class="arcade-stat-card" onclick="goToPage('charts')">
+        <span>POPULAR BET</span><strong>${commonScore.score}</strong><b>${commonScore.count}x</b><small>placar mais escolhido</small>
+      </button>` : ""}
+    <button class="arcade-stat-card" onclick="goToPage('matches')">
+      <span>GOAL METER</span><strong>${getAverageGoals()}</strong><b>G/J</b><small>media de gols por jogo finalizado</small>
+    </button>
+    ${consensus ? `
+      <button class="arcade-stat-card" onclick="openMatchModal('${consensus.match.match_id}')">
+        <span>CROWD MODE</span><strong>${consensus.match.home_team} x ${consensus.match.away_team}</strong><b>${consensus.pct}%</b><small>maior arquibancada virtual</small>
+      </button>` : ""}
+    ${mostZeroes ? `
+      <button class="arcade-stat-card danger" onclick="openParticipantModal('${mostZeroes.participantId}')">
+        <span>GAME OVER</span><strong>${mostZeroes.name}</strong><b>${mostZeroes.zeroes}</b><small>rodadas zeradas</small>
+      </button>` : ""}
+    ${mostDraws ? `
+      <button class="arcade-stat-card" onclick="openParticipantModal('${mostDraws.participantId}')">
+        <span>DRAW COMBO</span><strong>${mostDraws.name}</strong><b>${mostDraws.draws}</b><small>palpites em empate</small>
+      </button>` : ""}
+  `);
 }
 
 function renderAccuracyBoards() {
