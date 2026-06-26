@@ -1924,11 +1924,11 @@ function baseChartOptions(extra = {}) {
   return {
     responsive: true,
     plugins: {
-      legend: { labels: { color: "#dbeafe", font: { family: "Inter" } } }
+      legend: { labels: { color: "#d9fff0", font: { family: "Silkscreen, Inter" } } }
     },
     scales: {
-      x: { ticks: { color: "#94a3b8" }, grid: { color: "rgba(148,163,184,0.1)" } },
-      y: { ticks: { color: "#94a3b8" }, grid: { color: "rgba(148,163,184,0.1)" } }
+      x: { ticks: { color: "#8fb9aa" }, grid: { color: "rgba(85,255,127,0.12)" } },
+      y: { ticks: { color: "#8fb9aa" }, grid: { color: "rgba(85,255,127,0.12)" } }
     },
     ...extra
   };
