@@ -28,6 +28,7 @@ let rankingSearch = "";
 let liveScoreMeta = null;
 let arcadeAudio = null;
 let arcadeMusicOn = false;
+let pendingGoalCheer = false;
 
 // ==================== PROXY / FETCH ====================
 
@@ -245,6 +246,8 @@ function applyLiveScores(payload) {
       status: liveStatus
     };
   });
+
+  detectGoalCelebration();
 
   if (liveCount) {
     setText("liveStatus", `${liveCount} jogo(s) agora`);
@@ -616,6 +619,91 @@ function scheduleArcadeLoop() {
   arcadeAudio.timers.push(timer);
 }
 
+function getScoreMemory() {
+  try {
+    return JSON.parse(localStorage.getItem("eggbrothersScoreMemory") || "{}");
+  } catch (error) {
+    return {};
+  }
+}
+
+function saveScoreMemory(memory) {
+  try {
+    localStorage.setItem("eggbrothersScoreMemory", JSON.stringify(memory));
+  } catch (error) {
+    console.info("Memoria de placar indisponivel:", error.message);
+  }
+}
+
+function detectGoalCelebration() {
+  const previous = getScoreMemory();
+  const next = {};
+  let goalDetected = false;
+
+  matches.forEach(match => {
+    if (!isFilled(match.home_score) && !isFilled(match.away_score)) return;
+    const key = String(match.match_id || `${match.date}-${match.home_team}-${match.away_team}`);
+    const home = num(match.home_score);
+    const away = num(match.away_score);
+    const old = previous[key];
+    next[key] = { home, away };
+    if (!old) return;
+    if (home > num(old.home) || away > num(old.away)) goalDetected = true;
+  });
+
+  saveScoreMemory({ ...previous, ...next });
+  if (goalDetected) playGoalCheer();
+}
+
+function playGoalCheer() {
+  if (!arcadeAudio) arcadeAudio = createArcadeAudio();
+  if (!arcadeAudio || arcadeAudio.ctx.state !== "running") {
+    pendingGoalCheer = true;
+    setText("arcadeMusicBtn", "♪ GOL READY");
+    return;
+  }
+
+  pendingGoalCheer = false;
+  const { ctx, gain } = arcadeAudio;
+  const now = ctx.currentTime + 0.02;
+  gain.gain.setTargetAtTime(0.05, now, 0.05);
+  const cheerGain = ctx.createGain();
+  cheerGain.gain.setValueAtTime(0.0001, now);
+  cheerGain.gain.exponentialRampToValueAtTime(0.24, now + 0.12);
+  cheerGain.gain.exponentialRampToValueAtTime(0.1, now + 1.15);
+  cheerGain.gain.exponentialRampToValueAtTime(0.0001, now + 2.25);
+  cheerGain.connect(gain);
+
+  const bufferSize = Math.floor(ctx.sampleRate * 2.25);
+  const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+  const data = buffer.getChannelData(0);
+  for (let i = 0; i < bufferSize; i++) {
+    data[i] = (Math.random() * 2 - 1) * (1 - i / bufferSize * 0.35);
+  }
+
+  const noise = ctx.createBufferSource();
+  const band = ctx.createBiquadFilter();
+  band.type = "bandpass";
+  band.frequency.value = 950;
+  band.Q.value = 0.65;
+  noise.buffer = buffer;
+  noise.connect(band);
+  band.connect(cheerGain);
+  noise.start(now);
+  noise.stop(now + 2.25);
+
+  [392, 494, 587, 784].forEach((freq, i) => {
+    playChipNote(freq, now + i * 0.08, 0.24, "square", 0.18);
+  });
+}
+
+async function unlockArcadeAudio() {
+  if (!arcadeAudio) arcadeAudio = createArcadeAudio();
+  if (!arcadeAudio) return;
+  await arcadeAudio.ctx.resume();
+  if (pendingGoalCheer) playGoalCheer();
+}
+
 async function toggleArcadeMusic(force) {
   if (force === false || arcadeMusicOn) {
     arcadeMusicOn = false;
@@ -630,6 +718,7 @@ async function toggleArcadeMusic(force) {
   if (!arcadeAudio) arcadeAudio = createArcadeAudio();
   if (!arcadeAudio) return;
   await arcadeAudio.ctx.resume();
+  if (pendingGoalCheer) playGoalCheer();
   arcadeAudio.gain.gain.setTargetAtTime(0.026, arcadeAudio.ctx.currentTime, 0.08);
   arcadeMusicOn = true;
   setText("arcadeMusicBtn", "♪ SOUND ON");
@@ -2657,3 +2746,6 @@ async function init() {
 
 init();
 setInterval(init, 300000);
+document.addEventListener("pointerdown", () => {
+  if (pendingGoalCheer) unlockArcadeAudio();
+}, { passive: true });
