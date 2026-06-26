@@ -569,12 +569,12 @@ function createArcadeAudio() {
   if (!AudioCtx) return null;
   const ctx = new AudioCtx();
   const gain = ctx.createGain();
-  gain.gain.value = 0.035;
+  gain.gain.value = 0.026;
   gain.connect(ctx.destination);
   return { ctx, gain, timers: [] };
 }
 
-function playChipNote(freq, start, duration, type = "square") {
+function playChipNote(freq, start, duration, type = "triangle", peak = 0.55) {
   if (!arcadeAudio) return;
   const { ctx, gain } = arcadeAudio;
   const osc = ctx.createOscillator();
@@ -582,7 +582,8 @@ function playChipNote(freq, start, duration, type = "square") {
   osc.type = type;
   osc.frequency.value = freq;
   env.gain.setValueAtTime(0.0001, start);
-  env.gain.exponentialRampToValueAtTime(0.75, start + 0.015);
+  env.gain.exponentialRampToValueAtTime(peak, start + 0.04);
+  env.gain.exponentialRampToValueAtTime(Math.max(0.03, peak * 0.18), start + duration * 0.58);
   env.gain.exponentialRampToValueAtTime(0.0001, start + duration);
   osc.connect(env);
   env.connect(gain);
@@ -594,11 +595,24 @@ function scheduleArcadeLoop() {
   if (!arcadeAudio || !arcadeMusicOn) return;
   const { ctx } = arcadeAudio;
   const now = ctx.currentTime + 0.04;
-  const melody = [659, 784, 988, 784, 659, 523, 587, 659, 784, 659, 587, 523, 440, 523, 659, 784];
-  const bass = [131, 131, 196, 196, 165, 165, 220, 220];
-  melody.forEach((freq, i) => playChipNote(freq, now + i * 0.18, 0.105, i % 4 === 0 ? "triangle" : "square"));
-  bass.forEach((freq, i) => playChipNote(freq, now + i * 0.36, 0.15, "square"));
-  const timer = window.setTimeout(scheduleArcadeLoop, 2880);
+  const melodyA = [523, 659, 784, 880, 784, 659, 587, 659, 698, 880, 784, 698, 659, 587, 523, 440];
+  const melodyB = [587, 698, 880, 988, 880, 784, 698, 659, 587, 659, 784, 698, 587, 523, 494, 523];
+  const melodyC = [440, 523, 659, 784, 740, 659, 587, 523, 494, 587, 698, 784, 698, 587, 523, 440];
+  const bass = [110, 147, 165, 147, 98, 131, 147, 131, 123, 165, 196, 165, 110, 147, 131, 98];
+  const shimmer = [1047, 0, 1175, 0, 1319, 0, 1175, 0, 988, 0, 1175, 0, 1047, 0, 880, 0];
+  const phrases = [melodyA, melodyB, melodyA, melodyC];
+  phrases.forEach((phrase, phraseIndex) => {
+    const phraseStart = now + phraseIndex * 3.84;
+    phrase.forEach((freq, i) => {
+      const accent = phraseIndex === 1 || phraseIndex === 3 ? 0.3 : 0.34;
+      playChipNote(freq, phraseStart + i * 0.24, i % 4 === 3 ? 0.24 : 0.18, i % 5 === 0 ? "sine" : "triangle", accent);
+    });
+  });
+  bass.forEach((freq, i) => playChipNote(freq, now + i * 0.96, 0.54, "triangle", i % 4 === 0 ? 0.25 : 0.18));
+  shimmer.forEach((freq, i) => {
+    if (freq) playChipNote(freq, now + 0.36 + i * 0.96, 0.3, "sine", i % 4 === 0 ? 0.12 : 0.08);
+  });
+  const timer = window.setTimeout(scheduleArcadeLoop, 15360);
   arcadeAudio.timers.push(timer);
 }
 
@@ -616,7 +630,7 @@ async function toggleArcadeMusic(force) {
   if (!arcadeAudio) arcadeAudio = createArcadeAudio();
   if (!arcadeAudio) return;
   await arcadeAudio.ctx.resume();
-  arcadeAudio.gain.gain.setTargetAtTime(0.035, arcadeAudio.ctx.currentTime, 0.05);
+  arcadeAudio.gain.gain.setTargetAtTime(0.026, arcadeAudio.ctx.currentTime, 0.08);
   arcadeMusicOn = true;
   setText("arcadeMusicBtn", "♪ SOUND ON");
   scheduleArcadeLoop();
