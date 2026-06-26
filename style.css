@@ -2320,6 +2320,55 @@ tr:hover td,
   box-shadow: 0 4px 0 rgba(0,0,0,.45), 0 0 20px rgba(255,49,88,.09);
 }
 
+.goal-cheer-toast {
+  position: fixed;
+  left: 50%;
+  top: 24px;
+  z-index: 10000;
+  display: grid;
+  gap: 8px;
+  min-width: min(460px, calc(100vw - 32px));
+  padding: 18px 20px;
+  border: 3px solid var(--gold);
+  border-radius: var(--radius);
+  background:
+    linear-gradient(180deg, rgba(255,49,88,.94), rgba(3,8,7,.96)),
+    repeating-linear-gradient(0deg, rgba(255,255,255,.08) 0 1px, transparent 1px 4px);
+  color: #fff9c6;
+  text-align: center;
+  box-shadow: 0 12px 0 rgba(0,0,0,.52), 0 0 34px rgba(255,49,88,.35);
+  transform: translate(-50%, -140%);
+  opacity: 0;
+  pointer-events: none;
+  transition: transform .28s ease, opacity .28s ease;
+}
+
+.goal-cheer-toast.show {
+  transform: translate(-50%, 0);
+  opacity: 1;
+  animation: goalToastShake .7s steps(2, end) infinite;
+}
+
+.goal-cheer-toast strong {
+  font-family: var(--display);
+  font-size: clamp(22px, 5vw, 42px);
+  line-height: 1;
+  text-shadow: 3px 3px 0 #000, 0 0 18px rgba(255,240,74,.85);
+}
+
+.goal-cheer-toast span {
+  color: #ffffff;
+  font-family: var(--pixel);
+  font-size: 12px;
+}
+
+@keyframes goalToastShake {
+  0%, 100% { margin-left: 0; }
+  25% { margin-left: -2px; }
+  50% { margin-left: 2px; }
+  75% { margin-left: -1px; }
+}
+
 .match-card.match-live,
 .premium-match-card.live {
   border-color: rgba(255,49,88,.9);
