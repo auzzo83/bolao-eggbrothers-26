@@ -42,6 +42,7 @@
         <span>🔴 AO VIVO</span>
         <strong id="liveStatus">Verificando...</strong>
       </div>
+      <button id="arcadeMusicBtn" class="arcade-music-btn" onclick="toggleArcadeMusic()">♪ START SOUND</button>
     </div>
   </header>
 
@@ -184,6 +185,7 @@
         <button class="filter-btn" onclick="filterMatches('finished', this)">Finalizados</button>
         <button class="filter-btn" onclick="filterMatches('future', this)">Próximos</button>
       </div>
+      <div id="matchAdvancedFilters" class="match-control-panel"></div>
       <div id="matchesList" class="card-list"></div>
     </section>
 
@@ -203,6 +205,12 @@
         <h2>Painel Geral</h2>
       </div>
       <div id="statsContent" class="kpi-grid"></div>
+
+      <div class="section-title">
+        <span class="section-icon">ðŸ•¹ï¸</span>
+        <h2>Arcade Stats</h2>
+      </div>
+      <div id="statsArcadePanel" class="arcade-stat-grid"></div>
 
       <div class="section-title">
         <span class="section-icon">🎯</span>
