@@ -36,6 +36,9 @@ let liveScoreMeta = null;
 let arcadeAudio = null;
 let arcadeMusicOn = false;
 let pendingGoalCheer = false;
+let customMusicAudio = null;
+
+const CUSTOM_MUSIC_URL = "assets/audio/aquatic-ambience.mp3";
 
 // ==================== PROXY / FETCH ====================
 
@@ -598,9 +601,34 @@ function createArcadeAudio() {
   if (!AudioCtx) return null;
   const ctx = new AudioCtx();
   const gain = ctx.createGain();
-  gain.gain.value = 0.026;
+  gain.gain.value = 0.018;
   gain.connect(ctx.destination);
   return { ctx, gain, timers: [] };
+}
+
+function createCustomMusicAudio() {
+  const audio = new Audio(CUSTOM_MUSIC_URL);
+  audio.loop = true;
+  audio.preload = "auto";
+  audio.volume = 0.18;
+  return audio;
+}
+
+async function playCustomMusicIfAvailable() {
+  if (!customMusicAudio) customMusicAudio = createCustomMusicAudio();
+  try {
+    customMusicAudio.currentTime = customMusicAudio.currentTime || 0;
+    await customMusicAudio.play();
+    return true;
+  } catch (error) {
+    console.info("Musica customizada indisponivel, usando loop gerado:", error.message);
+    return false;
+  }
+}
+
+function stopCustomMusic() {
+  if (!customMusicAudio) return;
+  customMusicAudio.pause();
 }
 
 function playChipNote(freq, start, duration, type = "triangle", peak = 0.55) {
@@ -620,28 +648,89 @@ function playChipNote(freq, start, duration, type = "triangle", peak = 0.55) {
   osc.stop(start + duration + 0.02);
 }
 
+function playAquaticPad(freqs, start, duration, peak = 0.065) {
+  if (!arcadeAudio) return;
+  const { ctx, gain } = arcadeAudio;
+  const padGain = ctx.createGain();
+  const filter = ctx.createBiquadFilter();
+  filter.type = "lowpass";
+  filter.frequency.setValueAtTime(820, start);
+  filter.frequency.linearRampToValueAtTime(1420, start + duration * 0.55);
+  filter.frequency.linearRampToValueAtTime(620, start + duration);
+  padGain.gain.setValueAtTime(0.0001, start);
+  padGain.gain.exponentialRampToValueAtTime(peak, start + 1.6);
+  padGain.gain.exponentialRampToValueAtTime(Math.max(0.012, peak * 0.32), start + duration * 0.78);
+  padGain.gain.exponentialRampToValueAtTime(0.0001, start + duration);
+  filter.connect(padGain);
+  padGain.connect(gain);
+
+  freqs.forEach((freq, index) => {
+    const osc = ctx.createOscillator();
+    osc.type = index % 2 ? "triangle" : "sine";
+    osc.frequency.setValueAtTime(freq * (index % 2 ? 1.003 : 0.997), start);
+    osc.connect(filter);
+    osc.start(start);
+    osc.stop(start + duration + 0.1);
+  });
+}
+
+function playWaterDrop(freq, start, peak = 0.09) {
+  if (!arcadeAudio) return;
+  const { ctx, gain } = arcadeAudio;
+  const osc = ctx.createOscillator();
+  const env = ctx.createGain();
+  const filter = ctx.createBiquadFilter();
+  osc.type = "sine";
+  osc.frequency.setValueAtTime(freq, start);
+  osc.frequency.exponentialRampToValueAtTime(freq * 1.55, start + 0.12);
+  filter.type = "bandpass";
+  filter.frequency.value = freq * 1.8;
+  filter.Q.value = 8;
+  env.gain.setValueAtTime(0.0001, start);
+  env.gain.exponentialRampToValueAtTime(peak, start + 0.018);
+  env.gain.exponentialRampToValueAtTime(0.0001, start + 0.55);
+  osc.connect(filter);
+  filter.connect(env);
+  env.connect(gain);
+  osc.start(start);
+  osc.stop(start + 0.6);
+}
+
 function scheduleArcadeLoop() {
   if (!arcadeAudio || !arcadeMusicOn) return;
   const { ctx } = arcadeAudio;
   const now = ctx.currentTime + 0.04;
-  const melodyA = [523, 659, 784, 880, 784, 659, 587, 659, 698, 880, 784, 698, 659, 587, 523, 440];
-  const melodyB = [587, 698, 880, 988, 880, 784, 698, 659, 587, 659, 784, 698, 587, 523, 494, 523];
-  const melodyC = [440, 523, 659, 784, 740, 659, 587, 523, 494, 587, 698, 784, 698, 587, 523, 440];
-  const bass = [110, 147, 165, 147, 98, 131, 147, 131, 123, 165, 196, 165, 110, 147, 131, 98];
-  const shimmer = [1047, 0, 1175, 0, 1319, 0, 1175, 0, 988, 0, 1175, 0, 1047, 0, 880, 0];
-  const phrases = [melodyA, melodyB, melodyA, melodyC];
-  phrases.forEach((phrase, phraseIndex) => {
-    const phraseStart = now + phraseIndex * 3.84;
-    phrase.forEach((freq, i) => {
-      const accent = phraseIndex === 1 || phraseIndex === 3 ? 0.3 : 0.34;
-      playChipNote(freq, phraseStart + i * 0.24, i % 4 === 3 ? 0.24 : 0.18, i % 5 === 0 ? "sine" : "triangle", accent);
-    });
+  const pads = [
+    [130.81, 196.00, 261.63, 329.63],
+    [146.83, 220.00, 293.66, 369.99],
+    [123.47, 185.00, 246.94, 329.63],
+    [164.81, 246.94, 329.63, 415.30],
+    [110.00, 164.81, 220.00, 293.66],
+    [146.83, 196.00, 293.66, 392.00]
+  ];
+  const motif = [659, 784, 988, 880, 784, 659, 587, 659, 740, 880, 784, 698, 587, 494, 523, 587];
+  const counter = [392, 0, 494, 0, 587, 0, 659, 0, 587, 0, 494, 0, 440, 0, 392, 0];
+  const bass = [65.41, 73.42, 61.74, 82.41, 55.00, 73.42];
+
+  pads.forEach((chord, i) => playAquaticPad(chord, now + i * 7.68, 8.8, i % 2 ? 0.052 : 0.064));
+  bass.forEach((freq, i) => {
+    playChipNote(freq, now + i * 7.68, 4.8, "sine", 0.055);
+    playChipNote(freq * 2, now + 3.84 + i * 7.68, 2.2, "triangle", 0.025);
   });
-  bass.forEach((freq, i) => playChipNote(freq, now + i * 0.96, 0.54, "triangle", i % 4 === 0 ? 0.25 : 0.18));
-  shimmer.forEach((freq, i) => {
-    if (freq) playChipNote(freq, now + 0.36 + i * 0.96, 0.3, "sine", i % 4 === 0 ? 0.12 : 0.08);
+  motif.forEach((freq, i) => {
+    const offset = i * 1.44 + (i % 4 === 2 ? 0.18 : 0);
+    playChipNote(freq, now + 1.2 + offset, 0.78, "sine", i % 5 === 0 ? 0.075 : 0.052);
   });
-  const timer = window.setTimeout(scheduleArcadeLoop, 15360);
+  counter.forEach((freq, i) => {
+    if (freq) playChipNote(freq, now + 25.2 + i * 1.2, 0.68, "triangle", 0.036);
+  });
+  [988, 1175, 1319, 1568, 1760, 1319, 1175, 988].forEach((freq, i) => {
+    playChipNote(freq, now + 4.4 + i * 5.4, 1.25, "sine", 0.024);
+  });
+  [523, 659, 784, 587, 740, 988, 659, 880, 1175].forEach((freq, i) => {
+    playWaterDrop(freq, now + 2.6 + i * 4.9, i % 3 === 0 ? 0.07 : 0.045);
+  });
+  const timer = window.setTimeout(scheduleArcadeLoop, 46080);
   arcadeAudio.timers.push(timer);
 }
 
@@ -791,6 +880,7 @@ async function unlockArcadeAudio() {
 async function toggleArcadeMusic(force) {
   if (force === false || arcadeMusicOn) {
     arcadeMusicOn = false;
+    stopCustomMusic();
     if (arcadeAudio) {
       arcadeAudio.timers.forEach(clearTimeout);
       arcadeAudio.timers = [];
@@ -803,10 +893,17 @@ async function toggleArcadeMusic(force) {
   if (!arcadeAudio) return;
   await arcadeAudio.ctx.resume();
   if (pendingGoalCheer) playGoalCheer();
-  arcadeAudio.gain.gain.setTargetAtTime(0.026, arcadeAudio.ctx.currentTime, 0.08);
   arcadeMusicOn = true;
   setText("arcadeMusicBtn", "♪ SOUND ON");
-  scheduleArcadeLoop();
+  const customStarted = await playCustomMusicIfAvailable();
+  if (customStarted) {
+    arcadeAudio.gain.gain.setTargetAtTime(0.0001, arcadeAudio.ctx.currentTime, 0.05);
+    arcadeAudio.timers.forEach(clearTimeout);
+    arcadeAudio.timers = [];
+  } else {
+    arcadeAudio.gain.gain.setTargetAtTime(0.018, arcadeAudio.ctx.currentTime, 0.08);
+    scheduleArcadeLoop();
+  }
 }
 
 // ==================== DOM HELPERS ====================
@@ -3383,3 +3480,4 @@ setInterval(init, 300000);
 document.addEventListener("pointerdown", () => {
   if (pendingGoalCheer) unlockArcadeAudio();
 }, { passive: true });
+
