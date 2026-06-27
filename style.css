@@ -1892,6 +1892,265 @@ tr:hover td,
   }
 }
 
+/* ==================== TRUE FINAL iPHONE OS AQUA 2000 ==================== */
+
+:root {
+  --bg: #cfe8ff;
+  --panel: rgba(248, 253, 255, .90);
+  --panel2: rgba(215, 239, 255, .88);
+  --panel3: rgba(36, 112, 180, .88);
+  --text: #10243a;
+  --muted: #55738d;
+  --line: rgba(52, 133, 205, .34);
+  --brand: #007aff;
+  --gold: #ffcc00;
+  --green: #34c759;
+  --blue: #0a84ff;
+  --purple: #5856d6;
+  --red: #ff3b30;
+  --orange: #ff9500;
+  --teal: #00c7be;
+  --radius: 20px;
+  --radius-sm: 13px;
+  --shadow: 0 18px 42px rgba(24, 80, 130, .24), 0 4px 12px rgba(0, 0, 0, .14);
+}
+
+body {
+  color: var(--text) !important;
+  background:
+    radial-gradient(circle at 18% 0%, rgba(255,255,255,.96), transparent 32%),
+    radial-gradient(circle at 82% 8%, rgba(126,207,255,.50), transparent 30%),
+    repeating-linear-gradient(0deg, rgba(255,255,255,.48) 0 1px, rgba(157,204,238,.12) 1px 4px),
+    linear-gradient(180deg, #f9fdff 0%, #c4e2f8 34%, #75b9e8 100%) !important;
+}
+
+body::before {
+  opacity: .16 !important;
+  background:
+    linear-gradient(90deg, rgba(255,255,255,.50), transparent 24%, rgba(255,255,255,.26) 52%, transparent),
+    repeating-linear-gradient(90deg, rgba(49,116,180,.13) 0 1px, transparent 1px 42px) !important;
+}
+
+body::after {
+  opacity: .36 !important;
+  background:
+    radial-gradient(circle at 50% 0%, rgba(255,255,255,.78), transparent 36%),
+    linear-gradient(180deg, rgba(255,255,255,.44), transparent 46%) !important;
+}
+
+.hero {
+  color: #fff !important;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.38) 0%, rgba(255,255,255,.10) 47%, rgba(0,0,0,.12) 48%, rgba(0,90,160,.28) 100%),
+    linear-gradient(135deg, #50c3ff 0%, #0a7ed6 48%, #003d7a 100%) !important;
+  border-bottom: 1px solid rgba(0,57,112,.42) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.80),
+    inset 0 -1px 0 rgba(0,0,0,.22),
+    0 18px 38px rgba(0,78,145,.28) !important;
+}
+
+h1 {
+  font-family: 'Space Grotesk', Inter, sans-serif !important;
+  color: #fff !important;
+  letter-spacing: 0 !important;
+  text-shadow: 0 -1px 0 rgba(0,0,0,.36), 0 2px 12px rgba(0,42,95,.36) !important;
+}
+
+.brand-accent,
+.brand-year,
+.subtitle,
+.eyebrow {
+  color: rgba(255,255,255,.92) !important;
+  text-shadow: 0 -1px 0 rgba(0,0,0,.20) !important;
+}
+
+.nav {
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.76), rgba(226,243,255,.88) 48%, rgba(168,211,244,.94) 49%, rgba(87,161,218,.94)) !important;
+  border-bottom: 1px solid rgba(0,83,150,.34) !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.92), 0 8px 18px rgba(35,96,150,.20) !important;
+}
+
+.nav-btn,
+.filter-btn,
+.arcade-music-btn,
+.share-btn,
+.match-control-panel input,
+.match-control-panel select {
+  color: #103250 !important;
+  border: 1px solid rgba(14,89,156,.36) !important;
+  border-radius: 14px !important;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.98) 0%, rgba(226,246,255,.88) 47%, rgba(148,207,247,.88) 48%, rgba(50,143,222,.84) 100%) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.95),
+    inset 0 -1px 0 rgba(0,64,116,.22),
+    0 3px 0 rgba(42,95,142,.28),
+    0 8px 16px rgba(35,96,150,.16) !important;
+  text-shadow: 0 1px 0 rgba(255,255,255,.56) !important;
+}
+
+.nav-btn.active,
+.filter-btn.active,
+.arcade-music-btn {
+  color: #fff !important;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.54) 0%, rgba(104,195,255,.92) 45%, rgba(0,122,255,.96) 46%, rgba(0,71,164,.96) 100%) !important;
+  border-color: rgba(255,255,255,.74) !important;
+  text-shadow: 0 -1px 0 rgba(0,38,92,.42) !important;
+}
+
+.hero-card,
+.kpi,
+.podium-card,
+.premium-match-card,
+.bonus-card,
+.curiosity-card,
+.ranking-board,
+.chart-card,
+.roast-card,
+.story-main,
+.story-mini,
+.modal-box,
+.empty-state,
+.table-wrap,
+.match-card,
+.knockout-help,
+.knockout-board,
+.knockout-phase,
+.arcade-stat-card,
+.knockout-match-card {
+  color: var(--text) !important;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.94) 0%, rgba(250,253,255,.78) 46%, rgba(211,235,253,.80) 47%, rgba(166,215,247,.74) 100%) !important;
+  border: 1px solid rgba(42,124,194,.28) !important;
+  border-radius: 20px !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.98),
+    inset 0 -1px 0 rgba(35,100,155,.14),
+    0 16px 38px rgba(39,99,154,.20),
+    0 3px 8px rgba(0,0,0,.10) !important;
+  backdrop-filter: blur(18px) saturate(125%) !important;
+}
+
+.section-title h2,
+.arcade-stat-card strong,
+.shame-head strong,
+.knockout-team strong,
+.podium-name {
+  color: #10243a !important;
+  text-shadow: 0 1px 0 rgba(255,255,255,.78) !important;
+}
+
+.section-title::after {
+  background: linear-gradient(90deg, rgba(0,122,255,.72), rgba(255,255,255,.88), transparent) !important;
+  box-shadow: none !important;
+}
+
+.section-icon,
+.shame-pos,
+.shame-tag,
+.pts-badge,
+.aprv-pill {
+  color: #fff !important;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.44), rgba(255,255,255,.08) 44%, rgba(0,0,0,.09) 45%, rgba(0,122,255,.82)),
+    #007aff !important;
+  border: 1px solid rgba(255,255,255,.62) !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.76), 0 4px 10px rgba(0,95,175,.20) !important;
+}
+
+.arcade-stat-card span,
+.shame-head span,
+.shame-head small,
+.knockout-score-core span {
+  color: #007aff !important;
+}
+
+.arcade-stat-card b,
+.knockout-score-core b {
+  color: #ffcc00 !important;
+  text-shadow: 0 -1px 0 rgba(110,78,0,.22), 0 1px 0 rgba(255,255,255,.75) !important;
+}
+
+.shame-row,
+.match-pred-row,
+.mini-rank-row,
+tbody tr {
+  background: rgba(255,255,255,.52) !important;
+  border-color: rgba(42,124,194,.20) !important;
+}
+
+th {
+  color: #104a79 !important;
+  background: linear-gradient(180deg, rgba(255,255,255,.94), rgba(194,226,250,.80)) !important;
+}
+
+td {
+  color: #16324c !important;
+  border-bottom-color: rgba(42,124,194,.18) !important;
+}
+
+.knockout-match-card::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 42%;
+  background: linear-gradient(180deg, rgba(255,255,255,.56), rgba(255,255,255,.12), transparent) !important;
+  pointer-events: none;
+}
+
+.knockout-flag {
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.88), rgba(222,243,255,.60) 48%, rgba(136,199,241,.48) 49%, rgba(255,255,255,.24)),
+    rgba(255,255,255,.58) !important;
+  border-color: rgba(255,255,255,.72) !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.92), 0 6px 12px rgba(38,91,136,.22) !important;
+}
+
+.knockout-score-core {
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.92), rgba(209,239,255,.78) 46%, rgba(92,178,238,.74) 47%, rgba(15,104,196,.84)) !important;
+  border-color: rgba(255,255,255,.74) !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.94), 0 8px 18px rgba(0,90,170,.20) !important;
+}
+
+.knockout-match-card .match-arcade-strip button {
+  color: #fff !important;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.38), rgba(255,255,255,.08) 45%, rgba(0,0,0,.10) 46%, rgba(0,122,255,.82)),
+    #007aff !important;
+  border-color: rgba(255,255,255,.58) !important;
+}
+
+.knockout-match-card.open {
+  border-color: rgba(255,204,0,.66) !important;
+}
+
+.knockout-match-card.finished {
+  border-color: rgba(52,199,89,.68) !important;
+}
+
+.goal-cheer-toast {
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.48), rgba(255,255,255,.10) 45%, rgba(0,0,0,.10) 46%, rgba(0,122,255,.94)),
+    #007aff !important;
+  border-color: rgba(255,255,255,.72) !important;
+}
+
+@media (max-width: 760px) {
+  body {
+    background:
+      repeating-linear-gradient(0deg, rgba(255,255,255,.38) 0 1px, rgba(116,178,225,.12) 1px 4px),
+      linear-gradient(180deg, #f8fdff 0%, #9ed0f3 100%) !important;
+  }
+
+  .hero {
+    border-radius: 0 0 24px 24px !important;
+  }
+}
+
 /* ==================== FINAL iPHONE OS / AQUA 2000 THEME ==================== */
 
 :root {
@@ -3696,4 +3955,175 @@ h1 {
   .knockout-score-core {
     min-height: 58px;
   }
+}
+
+/* ==================== TRUE FINAL iPHONE OS AQUA 2000 ==================== */
+
+:root {
+  --bg: #cfe8ff;
+  --panel: rgba(248, 253, 255, .90);
+  --panel2: rgba(215, 239, 255, .88);
+  --panel3: rgba(36, 112, 180, .88);
+  --text: #10243a;
+  --muted: #55738d;
+  --line: rgba(52, 133, 205, .34);
+  --brand: #007aff;
+  --gold: #ffcc00;
+  --green: #34c759;
+  --blue: #0a84ff;
+  --red: #ff3b30;
+  --orange: #ff9500;
+  --teal: #00c7be;
+  --shadow: 0 18px 42px rgba(24, 80, 130, .24), 0 4px 12px rgba(0, 0, 0, .14);
+}
+
+body {
+  color: var(--text) !important;
+  background:
+    radial-gradient(circle at 18% 0%, rgba(255,255,255,.96), transparent 32%),
+    radial-gradient(circle at 82% 8%, rgba(126,207,255,.50), transparent 30%),
+    repeating-linear-gradient(0deg, rgba(255,255,255,.48) 0 1px, rgba(157,204,238,.12) 1px 4px),
+    linear-gradient(180deg, #f9fdff 0%, #c4e2f8 34%, #75b9e8 100%) !important;
+}
+
+.hero {
+  color: #fff !important;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.38) 0%, rgba(255,255,255,.10) 47%, rgba(0,0,0,.12) 48%, rgba(0,90,160,.28) 100%),
+    linear-gradient(135deg, #50c3ff 0%, #0a7ed6 48%, #003d7a 100%) !important;
+  border-bottom: 1px solid rgba(0,57,112,.42) !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.80), inset 0 -1px 0 rgba(0,0,0,.22), 0 18px 38px rgba(0,78,145,.28) !important;
+}
+
+h1 {
+  font-family: 'Space Grotesk', Inter, sans-serif !important;
+  color: #fff !important;
+  letter-spacing: 0 !important;
+  text-shadow: 0 -1px 0 rgba(0,0,0,.36), 0 2px 12px rgba(0,42,95,.36) !important;
+}
+
+.brand-accent,
+.brand-year,
+.subtitle,
+.eyebrow {
+  color: rgba(255,255,255,.92) !important;
+  text-shadow: 0 -1px 0 rgba(0,0,0,.20) !important;
+}
+
+.nav {
+  background: linear-gradient(180deg, rgba(255,255,255,.76), rgba(226,243,255,.88) 48%, rgba(168,211,244,.94) 49%, rgba(87,161,218,.94)) !important;
+  border-bottom: 1px solid rgba(0,83,150,.34) !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.92), 0 8px 18px rgba(35,96,150,.20) !important;
+}
+
+.nav-btn,
+.filter-btn,
+.arcade-music-btn,
+.share-btn,
+.match-control-panel input,
+.match-control-panel select {
+  color: #103250 !important;
+  border: 1px solid rgba(14,89,156,.36) !important;
+  border-radius: 14px !important;
+  background: linear-gradient(180deg, rgba(255,255,255,.98) 0%, rgba(226,246,255,.88) 47%, rgba(148,207,247,.88) 48%, rgba(50,143,222,.84) 100%) !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.95), inset 0 -1px 0 rgba(0,64,116,.22), 0 3px 0 rgba(42,95,142,.28), 0 8px 16px rgba(35,96,150,.16) !important;
+  text-shadow: 0 1px 0 rgba(255,255,255,.56) !important;
+}
+
+.nav-btn.active,
+.filter-btn.active,
+.arcade-music-btn {
+  color: #fff !important;
+  background: linear-gradient(180deg, rgba(255,255,255,.54) 0%, rgba(104,195,255,.92) 45%, rgba(0,122,255,.96) 46%, rgba(0,71,164,.96) 100%) !important;
+  border-color: rgba(255,255,255,.74) !important;
+  text-shadow: 0 -1px 0 rgba(0,38,92,.42) !important;
+}
+
+.hero-card,
+.kpi,
+.podium-card,
+.premium-match-card,
+.bonus-card,
+.curiosity-card,
+.ranking-board,
+.chart-card,
+.roast-card,
+.story-main,
+.story-mini,
+.modal-box,
+.empty-state,
+.table-wrap,
+.match-card,
+.knockout-help,
+.knockout-board,
+.knockout-phase,
+.arcade-stat-card,
+.knockout-match-card {
+  color: var(--text) !important;
+  background: linear-gradient(180deg, rgba(255,255,255,.94) 0%, rgba(250,253,255,.78) 46%, rgba(211,235,253,.80) 47%, rgba(166,215,247,.74) 100%) !important;
+  border: 1px solid rgba(42,124,194,.28) !important;
+  border-radius: 20px !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.98), inset 0 -1px 0 rgba(35,100,155,.14), 0 16px 38px rgba(39,99,154,.20), 0 3px 8px rgba(0,0,0,.10) !important;
+  backdrop-filter: blur(18px) saturate(125%) !important;
+}
+
+.section-title h2,
+.arcade-stat-card strong,
+.shame-head strong,
+.knockout-team strong,
+.podium-name {
+  color: #10243a !important;
+  text-shadow: 0 1px 0 rgba(255,255,255,.78) !important;
+}
+
+.section-icon,
+.shame-pos,
+.shame-tag,
+.pts-badge,
+.aprv-pill {
+  color: #fff !important;
+  background: linear-gradient(180deg, rgba(255,255,255,.44), rgba(255,255,255,.08) 44%, rgba(0,0,0,.09) 45%, rgba(0,122,255,.82)), #007aff !important;
+  border: 1px solid rgba(255,255,255,.62) !important;
+}
+
+.arcade-stat-card span,
+.shame-head span,
+.shame-head small,
+.knockout-score-core span {
+  color: #007aff !important;
+}
+
+.arcade-stat-card b,
+.knockout-score-core b {
+  color: #ffcc00 !important;
+  text-shadow: 0 -1px 0 rgba(110,78,0,.22), 0 1px 0 rgba(255,255,255,.75) !important;
+}
+
+.shame-row,
+.match-pred-row,
+.mini-rank-row,
+tbody tr {
+  background: rgba(255,255,255,.52) !important;
+  border-color: rgba(42,124,194,.20) !important;
+}
+
+th {
+  color: #104a79 !important;
+  background: linear-gradient(180deg, rgba(255,255,255,.94), rgba(194,226,250,.80)) !important;
+}
+
+td {
+  color: #16324c !important;
+  border-bottom-color: rgba(42,124,194,.18) !important;
+}
+
+.knockout-score-core {
+  background: linear-gradient(180deg, rgba(255,255,255,.92), rgba(209,239,255,.78) 46%, rgba(92,178,238,.74) 47%, rgba(15,104,196,.84)) !important;
+  border-color: rgba(255,255,255,.74) !important;
+}
+
+.knockout-match-card .match-arcade-strip button {
+  color: #fff !important;
+  background: linear-gradient(180deg, rgba(255,255,255,.38), rgba(255,255,255,.08) 45%, rgba(0,0,0,.10) 46%, rgba(0,122,255,.82)), #007aff !important;
+  border-color: rgba(255,255,255,.58) !important;
 }
