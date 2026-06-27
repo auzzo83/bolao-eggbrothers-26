@@ -4127,3 +4127,522 @@ td {
   background: linear-gradient(180deg, rgba(255,255,255,.38), rgba(255,255,255,.08) 45%, rgba(0,0,0,.10) 46%, rgba(0,122,255,.82)), #007aff !important;
   border-color: rgba(255,255,255,.58) !important;
 }
+
+/* ==================== FINAL FONT CLEANUP: NO ARCADE PIXEL ==================== */
+
+body,
+button,
+input,
+select,
+textarea,
+h1,
+h2,
+h3,
+h4,
+th,
+td,
+.nav-btn,
+.filter-btn,
+.arcade-music-btn,
+.section-title h2,
+.section-icon,
+.badge,
+.status-pill,
+.pts-badge,
+.aprv-pill,
+.chance-pill,
+.bonus-badge,
+.badge-pill,
+.arcade-stat-card,
+.arcade-stat-card span,
+.arcade-stat-card strong,
+.arcade-stat-card b,
+.kpi span,
+.kpi strong,
+.hero-card span,
+.hero-card strong,
+.subtitle,
+.eyebrow,
+.podium-label,
+.podium-name,
+.podium-pts,
+.shame-head,
+.shame-head span,
+.shame-head strong,
+.shame-head small,
+.shame-pos,
+.shame-tag,
+.knockout-phase h3,
+.knockout-help strong,
+.knockout-team strong,
+.knockout-score-core span,
+.knockout-score-core b,
+.match-card-meta,
+.match-arcade-strip button,
+.match-arcade-strip button b,
+.match-arcade-strip button span {
+  font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica, Arial, sans-serif !important;
+  letter-spacing: 0 !important;
+}
+
+h1 {
+  font-weight: 700 !important;
+  letter-spacing: -1.2px !important;
+}
+
+.nav-btn,
+.filter-btn,
+.arcade-music-btn,
+.badge,
+.status-pill,
+.pts-badge,
+.aprv-pill,
+.bonus-badge,
+.section-icon,
+.shame-pos,
+.shame-tag,
+.knockout-score-core span,
+.match-arcade-strip button span {
+  text-transform: none !important;
+  font-weight: 700 !important;
+}
+
+.knockout-score-core b,
+.arcade-stat-card b,
+.kpi strong,
+.podium-pts {
+  font-weight: 800 !important;
+}
+
+/* ==================== FINAL CONTRAST: DARK TEXT ON LIGHT AQUA ==================== */
+
+main,
+.page,
+.kpi,
+.podium-card,
+.premium-match-card,
+.bonus-card,
+.curiosity-card,
+.ranking-board,
+.chart-card,
+.roast-card,
+.story-main,
+.story-mini,
+.modal-box,
+.empty-state,
+.table-wrap,
+.match-card,
+.knockout-help,
+.knockout-board,
+.knockout-phase,
+.arcade-stat-card,
+.knockout-match-card,
+.shame-row,
+.match-pred-row,
+.mini-rank-row,
+td,
+th {
+  color: #10243a !important;
+}
+
+.kpi span,
+.kpi small,
+.arcade-stat-card small,
+.hero-card span,
+.shame-info small,
+.knockout-help span,
+.chart-note,
+.podium-exatos,
+.match-card-meta,
+.match-arcade-strip button span {
+  color: #385b78 !important;
+}
+
+.section-title h2,
+.knockout-phase h3,
+.ranking-board h3,
+.chart-card h3,
+.modal-title-block h2,
+.modal-section-title,
+.shame-head strong,
+.arcade-stat-card strong,
+.knockout-team strong,
+.podium-name,
+.table-player strong,
+.pred-info strong {
+  color: #061c32 !important;
+}
+
+.nav-btn {
+  color: #10243a !important;
+}
+
+.nav-btn.active,
+.filter-btn.active,
+.arcade-music-btn,
+.section-icon,
+.shame-pos,
+.shame-tag,
+.pts-badge,
+.badge-live,
+.badge-done,
+.badge-future,
+.badge-bonus,
+.knockout-match-card .match-arcade-strip button {
+  color: #fff !important;
+}
+
+.hero,
+.hero h1,
+.hero .eyebrow,
+.hero .subtitle,
+.hero-card,
+.hero-card span,
+.hero-card strong {
+  color: #fff !important;
+}
+
+.knockout-score-core b {
+  color: #061c32 !important;
+  text-shadow: 0 1px 0 rgba(255,255,255,.75) !important;
+}
+
+.knockout-score-core span {
+  color: #104a79 !important;
+}
+
+/* ==================== TRUE FINAL IPHONE / IPOD TOUCH OS 1-3 ==================== */
+
+:root {
+  --bg: #c7d1dc;
+  --panel: #f8fbff;
+  --panel2: #e8f3ff;
+  --panel3: #0b6fbd;
+  --text: #111820;
+  --muted: #5f6f7f;
+  --line: #9aaebe;
+  --brand: #007aff;
+  --gold: #ffcc00;
+  --green: #34c759;
+  --red: #ff3b30;
+  --orange: #ff9500;
+  --teal: #00a9c7;
+  --radius: 10px;
+  --radius-sm: 8px;
+  --shadow: 0 1px 0 rgba(255,255,255,.85), 0 3px 9px rgba(45, 62, 80, .20);
+}
+
+html {
+  background: #c7d1dc !important;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica, Arial, sans-serif !important;
+  color: #111820 !important;
+  background:
+    repeating-linear-gradient(0deg, rgba(255,255,255,.22) 0 1px, rgba(69,89,111,.10) 1px 4px),
+    linear-gradient(180deg, #dce6ef 0%, #b8c6d3 100%) !important;
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0 0 auto 0;
+  height: 20px;
+  z-index: 999;
+  pointer-events: none;
+  opacity: 1 !important;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.22), rgba(255,255,255,.04) 46%, rgba(0,0,0,.18) 47%, rgba(0,0,0,.36)),
+    #111820 !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.16), 0 1px 2px rgba(0,0,0,.35);
+}
+
+body::after {
+  opacity: 0 !important;
+}
+
+.hero {
+  margin-top: 20px;
+  min-height: 196px;
+  padding: 34px 48px 28px;
+  color: #fff !important;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.45) 0%, rgba(255,255,255,.12) 46%, rgba(0,0,0,.15) 47%, rgba(0,56,120,.18) 100%),
+    linear-gradient(180deg, #57bdf7 0%, #0b84d9 50%, #0059a8 100%) !important;
+  border-bottom: 1px solid #064c8c !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.72), inset 0 -1px 0 rgba(0,0,0,.24), 0 2px 7px rgba(0,0,0,.25) !important;
+}
+
+.hero-brand {
+  align-self: center;
+}
+
+h1 {
+  font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica, Arial, sans-serif !important;
+  font-size: clamp(38px, 5vw, 64px) !important;
+  font-weight: 300 !important;
+  letter-spacing: -2px !important;
+  color: #fff !important;
+  text-shadow: 0 -1px 0 rgba(0,0,0,.45), 0 1px 2px rgba(0,0,0,.22) !important;
+}
+
+.eyebrow,
+.subtitle {
+  font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica, Arial, sans-serif !important;
+  color: rgba(255,255,255,.92) !important;
+  text-transform: none !important;
+  letter-spacing: 0 !important;
+  font-weight: 600 !important;
+}
+
+.hero-card {
+  min-width: 190px;
+  color: #10243a !important;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.94) 0%, rgba(232,245,255,.90) 48%, rgba(172,215,245,.88) 49%, rgba(124,184,228,.86) 100%) !important;
+  border: 1px solid rgba(255,255,255,.80) !important;
+  border-radius: 18px !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.96), 0 2px 6px rgba(0,55,110,.24) !important;
+}
+
+.hero-card span,
+.hero-card strong {
+  color: #10243a !important;
+  text-shadow: 0 1px 0 rgba(255,255,255,.72) !important;
+}
+
+.nav {
+  top: 20px;
+  padding: 8px 48px;
+  gap: 8px;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.88) 0%, rgba(235,245,255,.86) 48%, rgba(170,210,240,.90) 49%, rgba(106,168,216,.92) 100%) !important;
+  border-top: 1px solid rgba(255,255,255,.84);
+  border-bottom: 1px solid #5c8db6 !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.90), 0 1px 4px rgba(0,0,0,.25) !important;
+}
+
+.nav-btn,
+.filter-btn,
+.arcade-music-btn,
+.share-btn {
+  min-height: 34px;
+  padding: 7px 16px;
+  color: #0b2c4a !important;
+  font-size: 15px !important;
+  font-weight: 700 !important;
+  border-radius: 10px !important;
+  border: 1px solid #6f9fc6 !important;
+  background:
+    linear-gradient(180deg, #ffffff 0%, #e9f6ff 47%, #a9d4f3 48%, #5ca4dc 100%) !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.98), inset 0 -1px 0 rgba(0,61,113,.28), 0 1px 2px rgba(0,0,0,.18) !important;
+  text-shadow: 0 1px 0 rgba(255,255,255,.72) !important;
+}
+
+.nav-btn.active,
+.filter-btn.active,
+.arcade-music-btn {
+  color: #fff !important;
+  border-color: #064f9f !important;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.46) 0%, rgba(105,190,255,.92) 45%, rgba(0,122,255,.98) 46%, rgba(0,64,150,.98) 100%) !important;
+  text-shadow: 0 -1px 0 rgba(0,37,86,.62) !important;
+}
+
+main {
+  max-width: 1180px;
+  padding-top: 28px;
+}
+
+.section-title {
+  margin: 26px 0 12px;
+}
+
+.section-title h2 {
+  color: #2f4152 !important;
+  font-size: 22px !important;
+  font-weight: 700 !important;
+  text-shadow: 0 1px 0 rgba(255,255,255,.74) !important;
+}
+
+.section-title::after {
+  height: 1px;
+  background: linear-gradient(90deg, rgba(80,105,130,.35), rgba(255,255,255,.80), transparent) !important;
+}
+
+.section-icon {
+  min-width: 34px;
+  height: 28px;
+  color: #fff !important;
+  border-radius: 8px !important;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.36), rgba(255,255,255,.08) 45%, rgba(0,0,0,.12) 46%, rgba(0,101,210,.80)),
+    #007aff !important;
+  border: 1px solid rgba(255,255,255,.74) !important;
+}
+
+.kpi,
+.podium-card,
+.premium-match-card,
+.bonus-card,
+.curiosity-card,
+.ranking-board,
+.chart-card,
+.roast-card,
+.story-main,
+.story-mini,
+.modal-box,
+.empty-state,
+.table-wrap,
+.match-card,
+.knockout-help,
+.knockout-board,
+.knockout-phase,
+.arcade-stat-card,
+.knockout-match-card {
+  color: #111820 !important;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.98) 0%, rgba(255,255,255,.92) 47%, rgba(235,241,247,.92) 48%, rgba(214,225,236,.90) 100%) !important;
+  border: 1px solid #9caebb !important;
+  border-radius: 12px !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.98), 0 1px 3px rgba(0,0,0,.22) !important;
+  backdrop-filter: none !important;
+}
+
+.knockout-board,
+.table-wrap,
+.ranking-board {
+  border-radius: 10px !important;
+}
+
+.arcade-stat-grid {
+  gap: 10px;
+}
+
+.arcade-stat-card {
+  min-height: 118px;
+}
+
+.arcade-stat-card span,
+.shame-head span,
+.shame-head small,
+.kpi span,
+.kpi small,
+.chart-note,
+.knockout-help span {
+  color: #5d6f80 !important;
+}
+
+.arcade-stat-card strong,
+.kpi strong,
+.shame-head strong,
+.knockout-team strong,
+.podium-name,
+.table-player strong,
+.pred-info strong {
+  color: #111820 !important;
+  text-shadow: 0 1px 0 rgba(255,255,255,.78) !important;
+}
+
+.arcade-stat-card b {
+  color: #111820 !important;
+  font-size: 28px !important;
+}
+
+.shame-row,
+.match-pred-row,
+.mini-rank-row,
+tbody tr {
+  background: linear-gradient(180deg, #fff, #edf4fa) !important;
+  border-color: #c6d2dc !important;
+  border-radius: 9px !important;
+}
+
+th {
+  color: #26394c !important;
+  background: linear-gradient(180deg, #fefefe, #d8e4ef) !important;
+  border-bottom: 1px solid #aab8c5 !important;
+}
+
+td {
+  color: #111820 !important;
+  background: transparent !important;
+}
+
+.badge,
+.status-pill,
+.pts-badge,
+.aprv-pill,
+.bonus-badge,
+.shame-pos,
+.shame-tag {
+  color: #fff !important;
+  border-radius: 8px !important;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.38), rgba(255,255,255,.08) 45%, rgba(0,0,0,.12) 46%, rgba(0,101,210,.82)),
+    #007aff !important;
+  border: 1px solid rgba(255,255,255,.68) !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.76), 0 1px 2px rgba(0,0,0,.18) !important;
+}
+
+.knockout-phase h3 {
+  color: #26394c !important;
+  font-size: 20px !important;
+}
+
+.knockout-match-card {
+  border-radius: 14px !important;
+}
+
+.knockout-match-card::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 45%;
+  background: linear-gradient(180deg, rgba(255,255,255,.74), rgba(255,255,255,.15), transparent) !important;
+  pointer-events: none;
+}
+
+.knockout-score-core {
+  background:
+    linear-gradient(180deg, #ffffff 0%, #eef7ff 47%, #9fcdf0 48%, #418fd2 100%) !important;
+  border: 1px solid #7fa9ca !important;
+  border-radius: 12px !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.98), 0 1px 3px rgba(0,0,0,.20) !important;
+}
+
+.knockout-score-core span,
+.knockout-score-core b {
+  color: #10243a !important;
+  text-shadow: 0 1px 0 rgba(255,255,255,.68) !important;
+}
+
+.knockout-match-card .match-arcade-strip button {
+  color: #fff !important;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.38), rgba(255,255,255,.08) 45%, rgba(0,0,0,.12) 46%, rgba(0,101,210,.82)),
+    #007aff !important;
+  border-color: rgba(255,255,255,.64) !important;
+}
+
+@media (max-width: 760px) {
+  .hero {
+    min-height: 150px;
+    padding: 26px 16px 20px;
+  }
+
+  .nav {
+    top: 20px;
+    padding: 8px 10px;
+  }
+
+  main {
+    padding: 18px 12px 72px;
+  }
+
+  h1 {
+    font-size: 38px !important;
+    letter-spacing: -1px !important;
+  }
+}
