@@ -12,12 +12,19 @@ const LIVE_CONFIG = {
   MAX_STALE_MINUTES: 20
 };
 
+const FINAL_SHEETS = {
+  MATCHES: "https://docs.google.com/spreadsheets/d/e/2PACX-1vRqE3kkDDcPtqpGJ3PguUDsikJMNFbm0zdl9AJeK6e-_egbJmgYX29r50ESGoFqV0qe_aToL4aNgbBh/pub?gid=1863807594&single=true&output=csv",
+  PREDICTIONS: "https://docs.google.com/spreadsheets/d/e/2PACX-1vRqE3kkDDcPtqpGJ3PguUDsikJMNFbm0zdl9AJeK6e-_egbJmgYX29r50ESGoFqV0qe_aToL4aNgbBh/pub?gid=111102253&single=true&output=csv"
+};
+
 // ==================== ESTADO GLOBAL ====================
 
 let participants = [];
 let matches = [];
 let predictions = [];
 let ranking = [];
+let knockoutMatches = [];
+let knockoutPredictions = [];
 let charts = {};
 let currentMatchFilter = "all";
 let matchGroupFilter = "all";
@@ -55,6 +62,23 @@ async function fetchCsv(baseUrl, name) {
     }
   }
   throw new Error(lastError || `${name} falhou ao carregar.`);
+}
+
+async function fetchOptionalCsv(url, name) {
+  const urls = proxiedUrls(url);
+  for (const candidate of urls) {
+    try {
+      const separator = candidate.includes("?") ? "&" : "?";
+      const response = await fetch(`${candidate}${separator}v=${Date.now()}`, { cache: "no-store" });
+      if (!response.ok) throw new Error(`Status: ${response.status}`);
+      const text = await response.text();
+      if (!text || text.includes("<html") || text.includes("<!DOCTYPE html")) throw new Error("retornou HTML");
+      return parseCsv(text);
+    } catch (error) {
+      console.info(`${name} opcional indisponivel:`, error.message);
+    }
+  }
+  return [];
 }
 
 async function fetchLiveScores() {
@@ -558,6 +582,7 @@ function showPage(pageId, btn) {
   if (pageId === "charts") setTimeout(renderCharts, 100);
   if (pageId === "arena") renderArena();
   if (pageId === "round") renderRoundMode();
+  if (pageId === "knockout") renderKnockout();
 }
 
 function goToPage(pageId) {
@@ -1739,6 +1764,223 @@ async function copyRoundSummary() {
   }
 }
 
+// ==================== MATA-MATA ====================
+
+function getKnockoutMatch(matchId) {
+  return knockoutMatches.find(match => String(match.match_id) === String(matchId));
+}
+
+function normalizeKnockoutData() {
+  knockoutMatches = knockoutMatches.map(row => ({
+    ...row,
+    phase: row.phase || row.fase || "",
+    game_no: row.game_no || row.jogo || "",
+    home_team: row.home_team || row.mandante || row.mandante_base || "",
+    away_team: row.away_team || row.visitante || row.visitante_base || "",
+    home_score: row.home_score || row.gols_mandante || "",
+    away_score: row.away_score || row.gols_visitante || "",
+    status: row.status_site || row.status || row.status_base || "",
+    winner: row.winner || row.vencedor || "",
+    loser: row.loser || row.perdedor || "",
+    home_source_type: row.home_source_type || row.tipo_home || "",
+    home_source_match: row.home_source_match || row.origem_home || "",
+    away_source_type: row.away_source_type || row.tipo_away || "",
+    away_source_match: row.away_source_match || row.origem_away || ""
+  }));
+
+  knockoutPredictions = knockoutPredictions.map(row => ({
+    ...row,
+    phase: row.phase || row.fase || "",
+    home_team: row.home_team || row.mandante || "",
+    away_team: row.away_team || row.visitante || "",
+    points: row.points || row.pontos || "",
+    locked: row.locked || row.travado || "NAO"
+  }));
+}
+
+function getKnockoutWinner(match) {
+  if (!match || !isFilled(match.home_score) || !isFilled(match.away_score)) return "";
+  const home = getKnockoutTeam(match, "home");
+  const away = getKnockoutTeam(match, "away");
+  if (num(match.home_score) > num(match.away_score)) return home;
+  if (num(match.away_score) > num(match.home_score)) return away;
+  return match.winner || "Definir nos penaltis";
+}
+
+function getKnockoutLoser(match) {
+  if (!match || !isFilled(match.home_score) || !isFilled(match.away_score)) return "";
+  const home = getKnockoutTeam(match, "home");
+  const away = getKnockoutTeam(match, "away");
+  if (num(match.home_score) > num(match.away_score)) return away;
+  if (num(match.away_score) > num(match.home_score)) return home;
+  return match.loser || "Definir nos penaltis";
+}
+
+function getKnockoutSourceTeam(type, matchId) {
+  const source = getKnockoutMatch(matchId);
+  if (!source) return "";
+  return type === "P" ? getKnockoutLoser(source) : getKnockoutWinner(source);
+}
+
+function getKnockoutTeam(match, side) {
+  const direct = side === "home" ? match.home_team : match.away_team;
+  if (direct) return direct;
+  const sourceType = side === "home" ? match.home_source_type : match.away_source_type;
+  const sourceMatch = side === "home" ? match.home_source_match : match.away_source_match;
+  return getKnockoutSourceTeam(sourceType, sourceMatch) || "Aguardando";
+}
+
+function getKnockoutStatus(match) {
+  if (isFilled(match.home_score) && isFilled(match.away_score)) return "Finalizado";
+  const home = getKnockoutTeam(match, "home");
+  const away = getKnockoutTeam(match, "away");
+  if (home !== "Aguardando" && away !== "Aguardando") return "Aberto";
+  return match.status || "Pendente";
+}
+
+function scoreKnockoutPrediction(match, pred) {
+  if (isFilled(pred.points)) return num(pred.points);
+  if (!match || !isFilled(match.home_score) || !isFilled(match.away_score)) return 0;
+  if (!isFilled(pred.pred_home) || !isFilled(pred.pred_away)) return 0;
+  const home = getKnockoutTeam(match, "home");
+  const away = getKnockoutTeam(match, "away");
+  const realWinner = getKnockoutWinner(match);
+  const predWinner = num(pred.pred_home) > num(pred.pred_away) ? home : num(pred.pred_away) > num(pred.pred_home) ? away : "";
+  if (!predWinner || predWinner !== realWinner) return 0;
+  return Math.abs(num(pred.pred_home) - num(pred.pred_away)) === Math.abs(num(match.home_score) - num(match.away_score)) ? 8 : 3;
+}
+
+function getKnockoutPredictionRows(matchId) {
+  return knockoutPredictions.filter(pred => String(pred.match_id) === String(matchId));
+}
+
+function getKnockoutLeaderboard() {
+  const board = {};
+  knockoutPredictions.forEach(pred => {
+    const id = pred.participant_id || pred.participant_name || "Participante";
+    const name = pred.participant_name || getParticipantName(pred.participant_id) || id;
+    const match = getKnockoutMatch(pred.match_id);
+    if (!board[id]) board[id] = { id, name, points: 0, hits: 0, marginHits: 0, predictions: 0 };
+    const pts = scoreKnockoutPrediction(match, pred);
+    board[id].points += pts;
+    board[id].hits += pts ? 1 : 0;
+    board[id].marginHits += pts === 8 ? 1 : 0;
+    board[id].predictions += isFilled(pred.pred_home) && isFilled(pred.pred_away) ? 1 : 0;
+  });
+  return Object.values(board).sort((a, b) => b.points - a.points || b.marginHits - a.marginHits);
+}
+
+function openKnockoutMatchModal(matchId) {
+  const match = getKnockoutMatch(matchId);
+  if (!match) return;
+  const modal = document.getElementById("matchModal");
+  const content = document.getElementById("matchModalContent");
+  const home = getKnockoutTeam(match, "home");
+  const away = getKnockoutTeam(match, "away");
+  const rows = getKnockoutPredictionRows(matchId);
+  content.innerHTML = `
+    <div class="match-modal-header">
+      <span class="match-modal-group">${match.phase}</span>
+      <span class="match-modal-date">${getKnockoutStatus(match)}</span>
+    </div>
+    <div class="match-modal-score">
+      <div class="match-modal-team"><strong>${home}</strong></div>
+      <div class="match-modal-result">
+        ${isFilled(match.home_score) && isFilled(match.away_score)
+          ? `<span class="match-modal-scoreline">${match.home_score} - ${match.away_score}</span>`
+          : `<span class="match-modal-vs">VS</span>`}
+      </div>
+      <div class="match-modal-team"><strong>${away}</strong></div>
+    </div>
+    <h3 class="modal-section-title">Palpites do mata-mata</h3>
+    <div class="match-preds-list">
+      ${rows.length ? rows.map(pred => {
+        const pts = scoreKnockoutPrediction(match, pred);
+        const predHome = pred.home_team || home;
+        const predAway = pred.away_team || away;
+        return `
+          <div class="match-pred-row" onclick="${pred.participant_id ? `openParticipantModal('${pred.participant_id}')` : ""}">
+            ${renderAvatar(pred.participant_name || getParticipantName(pred.participant_id), 32)}
+            <div class="pred-info">
+              <strong>${pred.participant_name || getParticipantName(pred.participant_id)}</strong>
+              <small>${predHome} ${pred.pred_home || "-"} x ${pred.pred_away || "-"} ${predAway}</small>
+            </div>
+            <span class="pts-badge ${pts === 8 ? "pts-bonus" : pts === 3 ? "pts-3" : "pts-0"}">${pts ? `+${pts}` : "0"}</span>
+          </div>
+        `;
+      }).join("") : `<div class="empty-state">Sem palpites publicados para este jogo.</div>`}
+    </div>
+  `;
+  modal.classList.add("open");
+  document.body.style.overflow = "hidden";
+}
+
+function renderKnockout() {
+  const finished = knockoutMatches.filter(match => getKnockoutStatus(match) === "Finalizado").length;
+  const open = knockoutMatches.filter(match => getKnockoutStatus(match) === "Aberto").length;
+  const pending = knockoutMatches.length - finished - open;
+  const board = getKnockoutLeaderboard();
+  setHTML("knockoutSummary", `
+    <button class="arcade-stat-card" onclick="goToPage('knockout')"><span>KO MATCHES</span><strong>${knockoutMatches.length}</strong><b>${finished}</b><small>finalizados</small></button>
+    <button class="arcade-stat-card" onclick="goToPage('knockout')"><span>ABERTOS</span><strong>${open}</strong><b>PLAY</b><small>times definidos para palpitar</small></button>
+    <button class="arcade-stat-card" onclick="goToPage('knockout')"><span>PENDENTES</span><strong>${pending}</strong><b>WAIT</b><small>dependem de vencedores anteriores</small></button>
+    <button class="arcade-stat-card" onclick="goToPage('knockout')"><span>LEADER</span><strong>${board[0] ? board[0].name : "A definir"}</strong><b>${board[0] ? board[0].points : 0}</b><small>pontos no mata-mata</small></button>
+  `);
+
+  setHTML("knockoutLeaderboard", `
+    <div class="shame-head">
+      <div><span>Ranking Mata-Mata</span><strong>Quem esta sobrevivendo no knockout</strong></div>
+      <small>+3 vencedor | +8 vencedor e diferenca de gols</small>
+    </div>
+    <div class="shame-list">
+      ${board.length ? board.slice(0, 10).map((row, index) => `
+        <div class="shame-row" onclick="${row.id ? `openParticipantModal('${row.id}')` : ""}">
+          <div class="shame-pos">${index + 1}</div>
+          ${renderAvatar(row.name, 34)}
+          <div class="shame-info"><strong>${row.name}</strong><small>${row.hits} acerto(s), ${row.marginHits} margem(ns), ${row.predictions} palpite(s)</small></div>
+          <div class="shame-tag">${row.points} pts</div>
+        </div>
+      `).join("") : `<div class="empty-state">Assim que os palpites forem publicados, o ranking do mata-mata aparece aqui.</div>`}
+    </div>
+  `);
+
+  const phases = ["32 avos de final", "Oitavas de final", "Quartas de final", "Semi final", "Final", "Disputa de 3º Lugar"];
+  setHTML("knockoutBracket", phases.map(phase => {
+    const rows = knockoutMatches.filter(match => match.phase === phase);
+    if (!rows.length) return "";
+    return `
+      <div class="knockout-phase">
+        <h3>${phase}</h3>
+        <div class="knockout-match-grid">
+          ${rows.map(match => {
+            const home = getKnockoutTeam(match, "home");
+            const away = getKnockoutTeam(match, "away");
+            const status = getKnockoutStatus(match);
+            const predCount = getKnockoutPredictionRows(match.match_id).length;
+            return `
+              <div class="knockout-match-card ${status === "Finalizado" ? "finished" : status === "Aberto" ? "open" : "pending"}" onclick="openKnockoutMatchModal('${match.match_id}')">
+                <div class="match-card-header">
+                  <span class="badge ${status === "Finalizado" ? "badge-done" : status === "Aberto" ? "badge-live" : "badge-future"}">${status}</span>
+                  <span class="match-card-meta">${match.match_id}</span>
+                </div>
+                <div class="match-card-score">
+                  <span>${home}</span>
+                  <span class="big-score">${isFilled(match.home_score) && isFilled(match.away_score) ? `${match.home_score} - ${match.away_score}` : "VS"}</span>
+                  <span class="team-away">${away}</span>
+                </div>
+                <div class="match-arcade-strip">
+                  <button><b>${predCount}</b><span>palpites</span></button>
+                  <button><b>${status === "Pendente" ? "LOCK" : "OPEN"}</b><span>${status === "Pendente" ? "aguarde" : "clicar"}</span></button>
+                </div>
+              </div>
+            `;
+          }).join("")}
+        </div>
+      </div>
+    `;
+  }).join(""));
+}
+
 // ==================== RANKING ====================
 
 function filterRanking(query) {
@@ -2144,6 +2386,10 @@ function renderArcadeStats() {
   const commonScore = getCommonScore();
   const consensus = getHighestConsensus();
   const { bestAccuracy, mostZeroes, mostDraws } = getStatsLeaders();
+  const koFinished = knockoutMatches.filter(match => getKnockoutStatus(match) === "Finalizado").length;
+  const koOpen = knockoutMatches.filter(match => getKnockoutStatus(match) === "Aberto").length;
+  const koBoard = getKnockoutLeaderboard();
+  const koPoints = koBoard.reduce((sum, row) => sum + row.points, 0);
 
   setHTML("statsArcadePanel", `
     ${leader ? `
@@ -2187,6 +2433,15 @@ function renderArcadeStats() {
       <button class="arcade-stat-card" onclick="openParticipantModal('${mostDraws.participantId}')">
         <span>DRAW COMBO</span><strong>${mostDraws.name}</strong><b>${mostDraws.draws}</b><small>palpites em empate</small>
       </button>` : ""}
+    <button class="arcade-stat-card" onclick="goToPage('knockout')">
+      <span>KO OPEN</span><strong>${koOpen}</strong><b>JOGOS</b><small>mata-mata pronto para palpitar</small>
+    </button>
+    <button class="arcade-stat-card" onclick="goToPage('knockout')">
+      <span>KO SCORE</span><strong>${koPoints}</strong><b>PTS</b><small>pontos distribuidos na fase final</small>
+    </button>
+    <button class="arcade-stat-card" onclick="goToPage('knockout')">
+      <span>KO LEADER</span><strong>${koBoard[0] ? koBoard[0].name : "A definir"}</strong><b>${koBoard[0] ? koBoard[0].points : 0}</b><small>${koFinished} jogo(s) finalizado(s)</small>
+    </button>
   `);
 }
 
@@ -2764,14 +3019,17 @@ function renderTopResultsChart() {
 
 async function init() {
   try {
-    [participants, matches, predictions, ranking] = await Promise.all([
+    [participants, matches, predictions, ranking, knockoutMatches, knockoutPredictions] = await Promise.all([
       fetchCsv(SHEETS.PARTICIPANTS, "Participantes"),
       fetchCsv(SHEETS.MATCHES, "Jogos"),
       fetchCsv(SHEETS.PREDICTIONS, "Palpites"),
-      fetchCsv(SHEETS.RANKING, "Ranking")
+      fetchCsv(SHEETS.RANKING, "Ranking"),
+      fetchOptionalCsv(FINAL_SHEETS.MATCHES, "Jogos mata-mata"),
+      fetchOptionalCsv(FINAL_SHEETS.PREDICTIONS, "Palpites mata-mata")
     ]);
 
     normalizeMatchRows();
+    normalizeKnockoutData();
     applyLiveScores(await fetchLiveScores());
     normalizeMatchRows();
 
@@ -2786,6 +3044,7 @@ async function init() {
     renderRanking();
     renderMatches();
     renderPredictions();
+    renderKnockout();
     renderStats();
 
     setText("lastUpdated", new Date().toLocaleString("pt-BR"));
