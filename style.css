@@ -5077,3 +5077,218 @@ h4,
 .podium-first .podium-pts {
   color: #d09a00 !important;
 }
+
+/* ==================== FINAL COMFORTABLE AQUA REFINEMENT ==================== */
+
+body {
+  background:
+    radial-gradient(circle at 50% 0%, rgba(255,255,255,.86), transparent 34%),
+    linear-gradient(180deg, #eef7ff 0%, #d8ebfa 34%, #c6deef 100%) !important;
+}
+
+body::before,
+body::after {
+  opacity: 0 !important;
+}
+
+.hero {
+  min-height: 210px !important;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.30), rgba(255,255,255,.06) 46%, rgba(0,0,0,.08) 47%, rgba(0,64,132,.16)),
+    linear-gradient(180deg, #65c4fb 0%, #1689d8 56%, #0565ad 100%) !important;
+}
+
+.nav {
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.92), rgba(231,243,252,.92) 52%, rgba(171,211,239,.88) 100%) !important;
+}
+
+.kpi,
+.podium-card,
+.premium-match-card,
+.bonus-card,
+.curiosity-card,
+.ranking-board,
+.chart-card,
+.roast-card,
+.story-main,
+.story-mini,
+.modal-box,
+.empty-state,
+.table-wrap,
+.match-card,
+.knockout-help,
+.knockout-board,
+.knockout-phase,
+.arcade-stat-card,
+.knockout-match-card,
+.shame-row,
+.match-pred-row,
+.mini-rank-row,
+.arena-card,
+.news-card,
+.insight-card,
+.history-row,
+.achievement-row,
+.sim-card {
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.96) 0%, rgba(250,253,255,.92) 54%, rgba(222,238,249,.82) 100%) !important;
+  border-color: rgba(94, 153, 199, .36) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.95),
+    0 8px 18px rgba(52, 104, 148, .16),
+    0 1px 2px rgba(0,0,0,.08) !important;
+}
+
+.kpi::before,
+.podium-card::before,
+.premium-match-card::before,
+.bonus-card::before,
+.curiosity-card::before,
+.ranking-board::before,
+.chart-card::before,
+.roast-card::before,
+.story-main::before,
+.story-mini::before,
+.modal-box::before,
+.empty-state::before,
+.table-wrap::before,
+.match-card::before,
+.knockout-help::before,
+.knockout-board::before,
+.knockout-phase::before,
+.arcade-stat-card::before,
+.knockout-match-card::before,
+.shame-row::before,
+.match-pred-row::before,
+.mini-rank-row::before,
+.arena-card::before,
+.news-card::before,
+.insight-card::before,
+.history-row::before,
+.achievement-row::before,
+.sim-card::before {
+  height: 28% !important;
+  background: linear-gradient(180deg, rgba(255,255,255,.56), rgba(255,255,255,0)) !important;
+}
+
+.shame-row,
+.mini-rank-row,
+.match-pred-row {
+  min-height: 72px !important;
+  padding: 14px 18px !important;
+  gap: 14px !important;
+  border-radius: 14px !important;
+}
+
+.shame-pos,
+.shame-tag,
+.avatar,
+.podium-avatar,
+.section-icon,
+.badge,
+.status-pill,
+.pts-badge,
+.aprv-pill,
+.bonus-badge,
+.badge-pill,
+.achievement-badge {
+  border-radius: 10px !important;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.48), rgba(91,178,238,.36) 50%, rgba(0,122,255,.78) 100%),
+    #0a84ff !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.78),
+    0 3px 8px rgba(0, 92, 180, .20) !important;
+}
+
+.shame-pos,
+.avatar {
+  width: 36px !important;
+  height: 36px !important;
+  font-size: 16px !important;
+}
+
+.shame-tag {
+  min-width: 54px !important;
+  padding: 6px 9px !important;
+  font-size: 12px !important;
+}
+
+.shame-info strong,
+.table-player strong,
+.podium-name,
+.knockout-team strong {
+  font-size: 17px !important;
+  line-height: 1.25 !important;
+}
+
+.shame-info small,
+.kpi small,
+.arcade-stat-card small {
+  color: #46677f !important;
+  font-size: 14px !important;
+}
+
+.kpi strong,
+.podium-pts,
+.arcade-stat-card b,
+.big-score,
+.knockout-score-core b {
+  color: #173a56 !important;
+}
+
+.kpi-leader strong,
+.podium-first .podium-pts {
+  color: #c89200 !important;
+}
+
+.nav-btn,
+.filter-btn,
+.arcade-music-btn,
+.share-btn,
+.match-arcade-strip button,
+.knockout-match-card .match-arcade-strip button {
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.82),
+    0 2px 5px rgba(42, 95, 142, .14) !important;
+}
+
+.nav-btn::before,
+.filter-btn::before,
+.arcade-music-btn::before,
+.share-btn::before,
+.match-arcade-strip button::before,
+.section-icon::before,
+.podium-medal::before,
+.curiosity-icon::before,
+.arena-icon::before,
+.news-icon::before,
+.insight-icon::before,
+.avatar::before,
+.podium-avatar::before,
+.knockout-flag::before,
+.badge::before,
+.status-pill::before,
+.pts-badge::before,
+.aprv-pill::before,
+.bonus-badge::before,
+.shame-pos::before,
+.shame-tag::before,
+.badge-pill::before,
+.achievement-badge::before {
+  height: 34% !important;
+  opacity: .62 !important;
+}
+
+.knockout-board .two-column-grid {
+  gap: 18px !important;
+}
+
+.knockout-phase {
+  padding: 18px !important;
+}
+
+.knockout-match-grid {
+  gap: 18px !important;
+}
