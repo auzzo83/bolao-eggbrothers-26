@@ -52,7 +52,8 @@ async function fetchCsv(baseUrl, name) {
   let lastError = "";
   for (const url of urls) {
     try {
-      const response = await fetch(url);
+      const separator = url.includes("?") ? "&" : "?";
+      const response = await fetch(`${url}${separator}v=${Date.now()}`, { cache: "no-store" });
       if (!response.ok) { lastError = `${name} falhou. Status: ${response.status}`; continue; }
       const text = await response.text();
       if (!text || text.includes("<html") || text.includes("<!DOCTYPE html")) { lastError = `${name} retornou HTML, não CSV.`; continue; }
@@ -1838,6 +1839,145 @@ function getKnockoutStatus(match) {
   return match.status || "Pendente";
 }
 
+function getTeamFlag(teamName) {
+  const team = String(teamName || "").trim();
+  if (!team || team === "Aguardando") return "⏳";
+
+  const knownMatch = matches.find(match =>
+    sameTeam(match.home_team, team) || sameTeam(match.away_team, team)
+  );
+  if (knownMatch) {
+    if (sameTeam(knownMatch.home_team, team) && knownMatch.home_flag) return knownMatch.home_flag;
+    if (sameTeam(knownMatch.away_team, team) && knownMatch.away_flag) return knownMatch.away_flag;
+  }
+
+  const flags = {
+    "africa do sul": "🇿🇦",
+    "alemanha": "🇩🇪",
+    "arabia saudita": "🇸🇦",
+    "argentina": "🇦🇷",
+    "argelia": "🇩🇿",
+    "australia": "🇦🇺",
+    "austria": "🇦🇹",
+    "belgica": "🇧🇪",
+    "bolivia": "🇧🇴",
+    "brasil": "🇧🇷",
+    "canada": "🇨🇦",
+    "chile": "🇨🇱",
+    "colombia": "🇨🇴",
+    "coreia do sul": "🇰🇷",
+    "costa do marfim": "🇨🇮",
+    "croacia": "🇭🇷",
+    "dinamarca": "🇩🇰",
+    "egito": "🇪🇬",
+    "equador": "🇪🇨",
+    "escocia": "🏴󠁧󠁢󠁳󠁣󠁴󠁿",
+    "espanha": "🇪🇸",
+    "estados unidos": "🇺🇸",
+    "eua": "🇺🇸",
+    "franca": "🇫🇷",
+    "gana": "🇬🇭",
+    "holanda": "🇳🇱",
+    "inglaterra": "🏴",
+    "ira": "🇮🇷",
+    "italia": "🇮🇹",
+    "japao": "🇯🇵",
+    "marrocos": "🇲🇦",
+    "mexico": "🇲🇽",
+    "nigeria": "🇳🇬",
+    "noruega": "🇳🇴",
+    "nova zelandia": "🇳🇿",
+    "panama": "🇵🇦",
+    "paraguai": "🇵🇾",
+    "peru": "🇵🇪",
+    "polonia": "🇵🇱",
+    "portugal": "🇵🇹",
+    "qatar": "🇶🇦",
+    "senegal": "🇸🇳",
+    "servia": "🇷🇸",
+    "suecia": "🇸🇪",
+    "suica": "🇨🇭",
+    "tchequia": "🇨🇿",
+    "tunisia": "🇹🇳",
+    "turquia": "🇹🇷",
+    "ucrania": "🇺🇦",
+    "uruguai": "🇺🇾"
+  };
+  return flags[normalizeName(team)] || "🌐";
+}
+
+function getTeamFlagCode(teamName) {
+  const codes = {
+    "africa do sul": "za",
+    "alemanha": "de",
+    "arabia saudita": "sa",
+    "argentina": "ar",
+    "argelia": "dz",
+    "australia": "au",
+    "austria": "at",
+    "belgica": "be",
+    "bolivia": "bo",
+    "brasil": "br",
+    "canada": "ca",
+    "chile": "cl",
+    "colombia": "co",
+    "coreia do sul": "kr",
+    "costa do marfim": "ci",
+    "croacia": "hr",
+    "dinamarca": "dk",
+    "egito": "eg",
+    "equador": "ec",
+    "escocia": "gb-sct",
+    "espanha": "es",
+    "estados unidos": "us",
+    "eua": "us",
+    "franca": "fr",
+    "gana": "gh",
+    "holanda": "nl",
+    "inglaterra": "gb-eng",
+    "ira": "ir",
+    "italia": "it",
+    "japao": "jp",
+    "marrocos": "ma",
+    "mexico": "mx",
+    "nigeria": "ng",
+    "noruega": "no",
+    "nova zelandia": "nz",
+    "panama": "pa",
+    "paraguai": "py",
+    "peru": "pe",
+    "polonia": "pl",
+    "portugal": "pt",
+    "qatar": "qa",
+    "senegal": "sn",
+    "servia": "rs",
+    "suecia": "se",
+    "suica": "ch",
+    "tchequia": "cz",
+    "tunisia": "tn",
+    "turquia": "tr",
+    "ucrania": "ua",
+    "uruguai": "uy"
+  };
+  return codes[normalizeName(teamName)];
+}
+
+function renderKnockoutFlag(teamName, extraClass = "") {
+  const code = getTeamFlagCode(teamName);
+  const fallback = getTeamFlag(teamName);
+  const label = String(teamName || "Aguardando").replace(/"/g, "&quot;");
+  const src = code && /^[a-z]{2}$/.test(code)
+    ? `https://cdn.jsdelivr.net/npm/country-flag-icons@1.5.19/3x2/${code.toUpperCase()}.svg`
+    : code ? `https://flagcdn.com/${code}.svg` : "";
+  return `
+    <span class="knockout-flag ${code ? `flag-${code}` : ""} ${extraClass}">
+      ${code
+        ? `<img class="knockout-flag-img" src="${src}" alt="Bandeira ${label}" onerror="this.replaceWith(document.createTextNode('${fallback}'))">`
+        : `<span class="knockout-flag-fallback">${fallback}</span>`}
+    </span>
+  `;
+}
+
 function scoreKnockoutPrediction(match, pred) {
   if (isFilled(pred.points)) return num(pred.points);
   if (!match || !isFilled(match.home_score) || !isFilled(match.away_score)) return 0;
@@ -1870,6 +2010,69 @@ function getKnockoutLeaderboard() {
   return Object.values(board).sort((a, b) => b.points - a.points || b.marginHits - a.marginHits);
 }
 
+function getGroupRankingEntry(participantId, fallbackName = "") {
+  const name = fallbackName || getParticipantName(participantId);
+  return ranking.find(row => {
+    const rowId = row.participant_id || getParticipantIdByName(row.name || row.nickname);
+    return String(rowId) === String(participantId) || (name && (row.name || row.nickname) === name);
+  });
+}
+
+function getKnockoutStatsMap() {
+  const map = {};
+  participants.forEach(player => {
+    const id = String(player.participant_id);
+    map[id] = {
+      id,
+      name: player.name || player.nickname || getParticipantName(id),
+      points: 0,
+      hits: 0,
+      marginHits: 0,
+      predictions: 0
+    };
+  });
+
+  getKnockoutLeaderboard().forEach(row => {
+    const id = String(row.id);
+    map[id] = { ...row, id, name: row.name || getParticipantName(id) || id };
+  });
+
+  return map;
+}
+
+function getFinalLeaderboard() {
+  const koMap = getKnockoutStatsMap();
+  const players = participants.length
+    ? participants
+    : ranking.map(row => ({
+        participant_id: row.participant_id || getParticipantIdByName(row.name || row.nickname),
+        name: row.name || row.nickname
+      }));
+
+  return players.map(player => {
+    const id = String(player.participant_id || getParticipantIdByName(player.name || player.nickname) || player.name);
+    const name = player.name || player.nickname || getParticipantName(id);
+    const groupRow = getGroupRankingEntry(id, name);
+    const groupPoints = groupRow ? getPoints(groupRow) : calcTotalPoints(id);
+    const knockout = koMap[id] || { points: 0, hits: 0, marginHits: 0, predictions: 0 };
+    return {
+      id,
+      name,
+      groupPoints,
+      knockoutPoints: knockout.points || 0,
+      totalPoints: groupPoints + (knockout.points || 0),
+      knockoutHits: knockout.hits || 0,
+      knockoutMarginHits: knockout.marginHits || 0,
+      knockoutPredictions: knockout.predictions || 0
+    };
+  }).sort((a, b) =>
+    b.totalPoints - a.totalPoints ||
+    b.knockoutPoints - a.knockoutPoints ||
+    b.groupPoints - a.groupPoints ||
+    a.name.localeCompare(b.name)
+  );
+}
+
 function openKnockoutMatchModal(matchId) {
   const match = getKnockoutMatch(matchId);
   if (!match) return;
@@ -1877,20 +2080,28 @@ function openKnockoutMatchModal(matchId) {
   const content = document.getElementById("matchModalContent");
   const home = getKnockoutTeam(match, "home");
   const away = getKnockoutTeam(match, "away");
+  const homeFlag = getTeamFlag(home);
+  const awayFlag = getTeamFlag(away);
   const rows = getKnockoutPredictionRows(matchId);
   content.innerHTML = `
     <div class="match-modal-header">
       <span class="match-modal-group">${match.phase}</span>
       <span class="match-modal-date">${getKnockoutStatus(match)}</span>
     </div>
-    <div class="match-modal-score">
-      <div class="match-modal-team"><strong>${home}</strong></div>
+    <div class="match-modal-score knockout-modal-score">
+      <div class="match-modal-team">
+        ${renderKnockoutFlag(home, "match-modal-flag")}
+        <strong>${home}</strong>
+      </div>
       <div class="match-modal-result">
         ${isFilled(match.home_score) && isFilled(match.away_score)
           ? `<span class="match-modal-scoreline">${match.home_score} - ${match.away_score}</span>`
           : `<span class="match-modal-vs">VS</span>`}
       </div>
-      <div class="match-modal-team"><strong>${away}</strong></div>
+      <div class="match-modal-team">
+        ${renderKnockoutFlag(away, "match-modal-flag")}
+        <strong>${away}</strong>
+      </div>
     </div>
     <h3 class="modal-section-title">Palpites do mata-mata</h3>
     <div class="match-preds-list">
@@ -1903,7 +2114,7 @@ function openKnockoutMatchModal(matchId) {
             ${renderAvatar(pred.participant_name || getParticipantName(pred.participant_id), 32)}
             <div class="pred-info">
               <strong>${pred.participant_name || getParticipantName(pred.participant_id)}</strong>
-              <small>${predHome} ${pred.pred_home || "-"} x ${pred.pred_away || "-"} ${predAway}</small>
+              <small>${getTeamFlag(predHome)} ${predHome} ${pred.pred_home || "-"} x ${pred.pred_away || "-"} ${predAway} ${getTeamFlag(predAway)}</small>
             </div>
             <span class="pts-badge ${pts === 8 ? "pts-bonus" : pts === 3 ? "pts-3" : "pts-0"}">${pts ? `+${pts}` : "0"}</span>
           </div>
@@ -1920,27 +2131,49 @@ function renderKnockout() {
   const open = knockoutMatches.filter(match => getKnockoutStatus(match) === "Aberto").length;
   const pending = knockoutMatches.length - finished - open;
   const board = getKnockoutLeaderboard();
+  const finalBoard = getFinalLeaderboard();
   setHTML("knockoutSummary", `
     <button class="arcade-stat-card" onclick="goToPage('knockout')"><span>KO MATCHES</span><strong>${knockoutMatches.length}</strong><b>${finished}</b><small>finalizados</small></button>
     <button class="arcade-stat-card" onclick="goToPage('knockout')"><span>ABERTOS</span><strong>${open}</strong><b>PLAY</b><small>times definidos para palpitar</small></button>
     <button class="arcade-stat-card" onclick="goToPage('knockout')"><span>PENDENTES</span><strong>${pending}</strong><b>WAIT</b><small>dependem de vencedores anteriores</small></button>
     <button class="arcade-stat-card" onclick="goToPage('knockout')"><span>LEADER</span><strong>${board[0] ? board[0].name : "A definir"}</strong><b>${board[0] ? board[0].points : 0}</b><small>pontos no mata-mata</small></button>
+    <button class="arcade-stat-card" onclick="goToPage('ranking')"><span>FINAL RANK</span><strong>${finalBoard[0] ? finalBoard[0].name : "A definir"}</strong><b>${finalBoard[0] ? finalBoard[0].totalPoints : 0}</b><small>grupos + mata-mata</small></button>
   `);
 
   setHTML("knockoutLeaderboard", `
-    <div class="shame-head">
-      <div><span>Ranking Mata-Mata</span><strong>Quem esta sobrevivendo no knockout</strong></div>
-      <small>+3 vencedor | +8 vencedor e diferenca de gols</small>
-    </div>
-    <div class="shame-list">
-      ${board.length ? board.slice(0, 10).map((row, index) => `
-        <div class="shame-row" onclick="${row.id ? `openParticipantModal('${row.id}')` : ""}">
-          <div class="shame-pos">${index + 1}</div>
-          ${renderAvatar(row.name, 34)}
-          <div class="shame-info"><strong>${row.name}</strong><small>${row.hits} acerto(s), ${row.marginHits} margem(ns), ${row.predictions} palpite(s)</small></div>
-          <div class="shame-tag">${row.points} pts</div>
+    <div class="two-column-grid">
+      <div>
+        <div class="shame-head">
+          <div><span>Ranking Mata-Mata</span><strong>Quem esta sobrevivendo no knockout</strong></div>
+          <small>+3 vencedor | +8 vencedor e diferenca de gols</small>
         </div>
-      `).join("") : `<div class="empty-state">Assim que os palpites forem publicados, o ranking do mata-mata aparece aqui.</div>`}
+        <div class="shame-list">
+          ${board.length ? board.slice(0, 10).map((row, index) => `
+            <div class="shame-row" onclick="${row.id ? `openParticipantModal('${row.id}')` : ""}">
+              <div class="shame-pos">${index + 1}</div>
+              ${renderAvatar(row.name, 34)}
+              <div class="shame-info"><strong>${row.name}</strong><small>${row.hits} acerto(s), ${row.marginHits} margem(ns), ${row.predictions} palpite(s)</small></div>
+              <div class="shame-tag">${row.points} pts</div>
+            </div>
+          `).join("") : `<div class="empty-state">Assim que os palpites forem publicados, o ranking do mata-mata aparece aqui.</div>`}
+        </div>
+      </div>
+      <div>
+        <div class="shame-head">
+          <div><span>Ranking Final</span><strong>Fase de grupos + fase final</strong></div>
+          <small>Soma automatica do ranking atual com o mata-mata</small>
+        </div>
+        <div class="shame-list">
+          ${finalBoard.length ? finalBoard.slice(0, 10).map((row, index) => `
+            <div class="shame-row" onclick="${row.id ? `openParticipantModal('${row.id}')` : ""}">
+              <div class="shame-pos">${index + 1}</div>
+              ${renderAvatar(row.name, 34)}
+              <div class="shame-info"><strong>${row.name}</strong><small>${row.groupPoints} grupos + ${row.knockoutPoints} mata-mata</small></div>
+              <div class="shame-tag">${row.totalPoints} pts</div>
+            </div>
+          `).join("") : `<div class="empty-state">Ranking final aparece aqui quando os participantes carregarem.</div>`}
+        </div>
+      </div>
     </div>
   `);
 
@@ -1955,18 +2188,30 @@ function renderKnockout() {
           ${rows.map(match => {
             const home = getKnockoutTeam(match, "home");
             const away = getKnockoutTeam(match, "away");
+            const homeFlag = getTeamFlag(home);
+            const awayFlag = getTeamFlag(away);
             const status = getKnockoutStatus(match);
             const predCount = getKnockoutPredictionRows(match.match_id).length;
+            const statusCode = status === "Finalizado" ? "DONE" : status === "Aberto" ? "READY" : "LOCK";
             return `
               <div class="knockout-match-card ${status === "Finalizado" ? "finished" : status === "Aberto" ? "open" : "pending"}" onclick="openKnockoutMatchModal('${match.match_id}')">
                 <div class="match-card-header">
                   <span class="badge ${status === "Finalizado" ? "badge-done" : status === "Aberto" ? "badge-live" : "badge-future"}">${status}</span>
                   <span class="match-card-meta">${match.match_id}</span>
                 </div>
-                <div class="match-card-score">
-                  <span>${home}</span>
-                  <span class="big-score">${isFilled(match.home_score) && isFilled(match.away_score) ? `${match.home_score} - ${match.away_score}` : "VS"}</span>
-                  <span class="team-away">${away}</span>
+                <div class="knockout-versus">
+                  <div class="knockout-team">
+                    ${renderKnockoutFlag(home)}
+                    <strong>${home}</strong>
+                  </div>
+                  <div class="knockout-score-core">
+                    <span>${statusCode}</span>
+                    <b>${isFilled(match.home_score) && isFilled(match.away_score) ? `${match.home_score} - ${match.away_score}` : "VS"}</b>
+                  </div>
+                  <div class="knockout-team knockout-team-away">
+                    ${renderKnockoutFlag(away)}
+                    <strong>${away}</strong>
+                  </div>
                 </div>
                 <div class="match-arcade-strip">
                   <button><b>${predCount}</b><span>palpites</span></button>
@@ -1986,6 +2231,68 @@ function renderKnockout() {
 function filterRanking(query) {
   rankingSearch = query.toLowerCase();
   renderRanking();
+}
+
+function renderKnockoutRankingTable() {
+  const board = getKnockoutLeaderboard();
+  setHTML("knockoutRankingBody", board.map((row, index) => `
+    <tr class="ranking-row" onclick="${row.id ? `openParticipantModal('${row.id}')` : ""}">
+      <td class="rank-pos">${index + 1}</td>
+      <td>
+        <div class="table-player">
+          ${renderAvatar(row.name, 36)}
+          <div><strong>${row.name}</strong><small>fase final</small></div>
+        </div>
+      </td>
+      <td class="green-number">${row.points}</td>
+      <td class="blue-number">${row.hits}</td>
+      <td class="yellow-number">${row.marginHits}</td>
+      <td>${row.predictions}</td>
+    </tr>
+  `).join("") || `<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:24px">Assim que a aba de palpites mata-mata estiver publicada, este ranking aparece aqui.</td></tr>`);
+}
+
+function renderFinalRankingTable() {
+  const board = getFinalLeaderboard();
+  const leader = board[0];
+  const vice = board[1];
+  const totalKoPoints = board.reduce((sum, row) => sum + row.knockoutPoints, 0);
+  const maxPts = leader ? leader.totalPoints : 1;
+
+  setHTML("finalRankingSummary", `
+    <button class="arcade-stat-card" onclick="${leader ? `openParticipantModal('${leader.id}')` : ""}">
+      <span>FINAL PLAYER 1</span><strong>${leader ? leader.name : "A definir"}</strong><b>${leader ? leader.totalPoints : 0}</b><small>pontos totais</small>
+    </button>
+    <button class="arcade-stat-card" onclick="goToPage('knockout')">
+      <span>KO SCORE</span><strong>${totalKoPoints}</strong><b>PTS</b><small>pontos vindos da fase final</small>
+    </button>
+    <button class="arcade-stat-card" onclick="goToPage('ranking')">
+      <span>LEAD GAP</span><strong>${leader && vice ? leader.totalPoints - vice.totalPoints : 0}</strong><b>PTS</b><small>vantagem no ranking final</small>
+    </button>
+  `);
+
+  setHTML("finalRankingBody", board.map((row, index) => {
+    const barWidth = maxPts > 0 ? Math.round(row.totalPoints / maxPts * 100) : 0;
+    const medal = index === 0 ? "1P" : index === 1 ? "2P" : index === 2 ? "3P" : index + 1;
+    return `
+      <tr class="ranking-row ${index < 3 ? 'top-row' : ''}" onclick="${row.id ? `openParticipantModal('${row.id}')` : ""}">
+        <td class="rank-pos">${medal}</td>
+        <td>
+          <div class="table-player">
+            ${renderAvatar(row.name, 36)}
+            <div>
+              <strong>${row.name}</strong>
+              <div class="pts-bar-wrap"><div class="pts-bar" style="width:${barWidth}%"></div></div>
+            </div>
+          </div>
+        </td>
+        <td class="green-number">${row.totalPoints}</td>
+        <td>${row.groupPoints}</td>
+        <td class="yellow-number">${row.knockoutPoints}</td>
+        <td><span class="aprv-pill">${row.knockoutPredictions ? "KO ativo" : "aguardando KO"}</span></td>
+      </tr>
+    `;
+  }).join("") || `<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:24px">Ranking final aparece aqui quando os participantes carregarem.</td></tr>`);
 }
 
 function renderRanking() {
@@ -2026,6 +2333,9 @@ function renderRanking() {
       </tr>
     `;
   }).join("") || `<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:24px">Nenhum participante encontrado.</td></tr>`);
+
+  renderKnockoutRankingTable();
+  renderFinalRankingTable();
 }
 
 // ==================== JOGOS ====================
@@ -2390,6 +2700,8 @@ function renderArcadeStats() {
   const koOpen = knockoutMatches.filter(match => getKnockoutStatus(match) === "Aberto").length;
   const koBoard = getKnockoutLeaderboard();
   const koPoints = koBoard.reduce((sum, row) => sum + row.points, 0);
+  const finalBoard = getFinalLeaderboard();
+  const finalLeader = finalBoard[0];
 
   setHTML("statsArcadePanel", `
     ${leader ? `
@@ -2441,6 +2753,9 @@ function renderArcadeStats() {
     </button>
     <button class="arcade-stat-card" onclick="goToPage('knockout')">
       <span>KO LEADER</span><strong>${koBoard[0] ? koBoard[0].name : "A definir"}</strong><b>${koBoard[0] ? koBoard[0].points : 0}</b><small>${koFinished} jogo(s) finalizado(s)</small>
+    </button>
+    <button class="arcade-stat-card" onclick="goToPage('ranking')">
+      <span>FINAL LEADER</span><strong>${finalLeader ? finalLeader.name : "A definir"}</strong><b>${finalLeader ? finalLeader.totalPoints : 0}</b><small>ranking geral + mata-mata</small>
     </button>
   `);
 }
