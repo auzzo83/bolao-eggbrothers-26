@@ -1892,6 +1892,323 @@ tr:hover td,
   }
 }
 
+/* ==================== FINAL iPHONE OS / AQUA 2000 THEME ==================== */
+
+:root {
+  --bg: #d9ecff;
+  --panel: rgba(245, 251, 255, .88);
+  --panel2: rgba(208, 235, 255, .86);
+  --panel3: rgba(27, 93, 150, .88);
+  --text: #10243a;
+  --muted: #53718b;
+  --line: rgba(60, 142, 208, .34);
+  --brand: #0f9dff;
+  --gold: #ffe45c;
+  --green: #39c764;
+  --blue: #007aff;
+  --purple: #8a63d2;
+  --red: #ff3b30;
+  --orange: #ff9500;
+  --teal: #00c7d9;
+  --radius: 18px;
+  --radius-sm: 12px;
+  --shadow: 0 18px 42px rgba(24, 80, 130, .24), 0 4px 12px rgba(0, 0, 0, .14);
+}
+
+body {
+  color: var(--text);
+  background:
+    radial-gradient(circle at 18% 0%, rgba(255,255,255,.95), transparent 32%),
+    radial-gradient(circle at 82% 8%, rgba(126, 207, 255, .48), transparent 30%),
+    repeating-linear-gradient(0deg, rgba(255,255,255,.42) 0 1px, rgba(157, 204, 238, .12) 1px 4px),
+    linear-gradient(180deg, #f7fcff 0%, #bfdef6 34%, #73b8e8 100%) !important;
+}
+
+body::before {
+  opacity: .18;
+  background:
+    linear-gradient(90deg, rgba(255,255,255,.42), transparent 24%, rgba(255,255,255,.22) 52%, transparent),
+    repeating-linear-gradient(90deg, rgba(49,116,180,.12) 0 1px, transparent 1px 42px);
+}
+
+body::after {
+  opacity: .42;
+  background:
+    radial-gradient(circle at 50% 0%, rgba(255,255,255,.72), transparent 36%),
+    linear-gradient(180deg, rgba(255,255,255,.44), transparent 46%);
+}
+
+.hero {
+  color: #fff;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.34) 0%, rgba(255,255,255,.09) 47%, rgba(0,0,0,.10) 48%, rgba(0,90,160,.26) 100%),
+    linear-gradient(135deg, #42b9ff 0%, #0876c9 48%, #003d7a 100%) !important;
+  border-bottom: 1px solid rgba(0, 57, 112, .42) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.75),
+    inset 0 -1px 0 rgba(0,0,0,.22),
+    0 18px 38px rgba(0, 78, 145, .28) !important;
+}
+
+h1 {
+  font-family: 'Space Grotesk', Inter, sans-serif;
+  color: #fff;
+  letter-spacing: 0;
+  text-shadow: 0 -1px 0 rgba(0,0,0,.36), 0 2px 12px rgba(0, 42, 95, .36);
+}
+
+.brand-accent,
+.brand-year {
+  color: #fff;
+}
+
+.subtitle,
+.eyebrow {
+  color: rgba(255,255,255,.86);
+  text-shadow: 0 -1px 0 rgba(0,0,0,.18);
+}
+
+.hero-card {
+  color: #fff;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.32), rgba(255,255,255,.08) 48%, rgba(0,0,0,.10) 49%, rgba(0,73,138,.22)),
+    rgba(4, 94, 174, .52) !important;
+  border-color: rgba(255,255,255,.42) !important;
+  border-radius: 16px;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.62), 0 8px 18px rgba(0,42,90,.24) !important;
+}
+
+.hero-card span,
+.hero-card strong {
+  color: #fff;
+}
+
+.nav {
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.72), rgba(226,243,255,.84) 48%, rgba(168,211,244,.92) 49%, rgba(87,161,218,.92)) !important;
+  border-bottom: 1px solid rgba(0,83,150,.34) !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.90), 0 8px 18px rgba(35, 96, 150, .20);
+}
+
+.nav-btn,
+.filter-btn,
+.arcade-music-btn,
+.match-control-panel input,
+.match-control-panel select,
+.match-control,
+.share-btn {
+  color: #103250 !important;
+  border: 1px solid rgba(14, 89, 156, .36) !important;
+  border-radius: 14px !important;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.95) 0%, rgba(226,246,255,.86) 47%, rgba(148,207,247,.86) 48%, rgba(50,143,222,.82) 100%) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.95),
+    inset 0 -1px 0 rgba(0,64,116,.22),
+    0 3px 0 rgba(42, 95, 142, .28),
+    0 8px 16px rgba(35, 96, 150, .16) !important;
+  text-shadow: 0 1px 0 rgba(255,255,255,.52);
+}
+
+.nav-btn.active,
+.filter-btn.active,
+.arcade-music-btn {
+  color: #fff !important;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.50) 0%, rgba(104,195,255,.90) 45%, rgba(0,122,255,.94) 46%, rgba(0,71,164,.95) 100%) !important;
+  border-color: rgba(255,255,255,.70) !important;
+  text-shadow: 0 -1px 0 rgba(0,38,92,.42);
+}
+
+.kpi,
+.podium-card,
+.premium-match-card,
+.bonus-card,
+.curiosity-card,
+.ranking-board,
+.chart-card,
+.roast-card,
+.story-main,
+.story-mini,
+.modal-box,
+.empty-state,
+.table-wrap,
+.match-card,
+.knockout-help,
+.knockout-board,
+.knockout-phase,
+.arcade-stat-card,
+.knockout-match-card {
+  color: var(--text);
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.92) 0%, rgba(250,253,255,.76) 46%, rgba(211,235,253,.78) 47%, rgba(166,215,247,.72) 100%) !important;
+  border: 1px solid rgba(42, 124, 194, .28) !important;
+  border-radius: 20px !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.96),
+    inset 0 -1px 0 rgba(35,100,155,.14),
+    0 16px 38px rgba(39, 99, 154, .20),
+    0 3px 8px rgba(0, 0, 0, .10) !important;
+  backdrop-filter: blur(18px) saturate(125%);
+}
+
+.section-title h2 {
+  color: #104a79;
+  text-shadow: 0 1px 0 rgba(255,255,255,.9);
+}
+
+.section-title::after {
+  background: linear-gradient(90deg, rgba(0,122,255,.72), rgba(255,255,255,.88), transparent);
+  box-shadow: none;
+}
+
+.section-icon {
+  color: #fff;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.40), rgba(255,255,255,.08) 45%, rgba(0,0,0,.08) 46%, rgba(0,122,255,.74)),
+    #0a84ff;
+  border-color: rgba(255,255,255,.72);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.82), 0 5px 12px rgba(0,95,175,.24);
+}
+
+.arcade-stat-card span,
+.shame-head span,
+.shame-head small,
+.knockout-score-core span {
+  color: #007aff;
+}
+
+.arcade-stat-card strong,
+.shame-head strong,
+.knockout-team strong,
+.podium-name {
+  color: #10243a;
+  text-shadow: 0 1px 0 rgba(255,255,255,.78);
+}
+
+.arcade-stat-card b,
+.knockout-score-core b {
+  color: #ffcc00;
+  text-shadow: 0 -1px 0 rgba(110,78,0,.22), 0 1px 0 rgba(255,255,255,.75);
+}
+
+.knockout-help strong,
+.shame-pos,
+.shame-tag,
+.pts-badge,
+.aprv-pill {
+  color: #fff !important;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.42), rgba(255,255,255,.08) 44%, rgba(0,0,0,.09) 45%, rgba(0,122,255,.78)),
+    #007aff !important;
+  border: 1px solid rgba(255,255,255,.58);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.72), 0 4px 10px rgba(0,95,175,.20);
+}
+
+.shame-row,
+.match-pred-row,
+.mini-rank-row,
+tbody tr {
+  background: rgba(255,255,255,.48) !important;
+  border-color: rgba(42,124,194,.20) !important;
+}
+
+th {
+  color: #104a79;
+  background: linear-gradient(180deg, rgba(255,255,255,.92), rgba(194,226,250,.78)) !important;
+}
+
+td {
+  color: #16324c;
+  border-bottom-color: rgba(42,124,194,.18);
+}
+
+.badge,
+.status-pill,
+.bonus-badge {
+  border-radius: 9px;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.62);
+}
+
+.knockout-match-card {
+  overflow: hidden;
+}
+
+.knockout-match-card::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 42%;
+  background: linear-gradient(180deg, rgba(255,255,255,.52), rgba(255,255,255,.10), transparent);
+  pointer-events: none;
+}
+
+.knockout-versus {
+  grid-template-columns: minmax(0, 1fr) 96px minmax(0, 1fr);
+}
+
+.knockout-flag {
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.86), rgba(222,243,255,.58) 48%, rgba(136,199,241,.46) 49%, rgba(255,255,255,.24)),
+    rgba(255,255,255,.54) !important;
+  border-color: rgba(255,255,255,.70);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.90), 0 6px 12px rgba(38,91,136,.22);
+}
+
+.knockout-score-core {
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.90), rgba(209,239,255,.76) 46%, rgba(92,178,238,.72) 47%, rgba(15,104,196,.82)) !important;
+  border-color: rgba(255,255,255,.72);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.92), 0 8px 18px rgba(0,90,170,.20);
+}
+
+.knockout-match-card .match-arcade-strip button {
+  color: #fff;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.36), rgba(255,255,255,.08) 45%, rgba(0,0,0,.10) 46%, rgba(0,122,255,.78)),
+    #007aff !important;
+  border-color: rgba(255,255,255,.54);
+}
+
+.knockout-match-card .match-arcade-strip button span {
+  color: rgba(255,255,255,.86);
+}
+
+.knockout-match-card.open {
+  border-color: rgba(255, 204, 0, .62) !important;
+}
+
+.knockout-match-card.finished {
+  border-color: rgba(52, 199, 89, .66) !important;
+}
+
+.goal-cheer-toast {
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.46), rgba(255,255,255,.10) 45%, rgba(0,0,0,.10) 46%, rgba(0,122,255,.92)),
+    #007aff;
+  border-color: rgba(255,255,255,.70);
+}
+
+@media (max-width: 760px) {
+  body {
+    background:
+      repeating-linear-gradient(0deg, rgba(255,255,255,.36) 0 1px, rgba(116,178,225,.12) 1px 4px),
+      linear-gradient(180deg, #f7fcff 0%, #9ed0f3 100%) !important;
+  }
+
+  .hero {
+    border-radius: 0 0 24px 24px;
+  }
+
+  .nav {
+    padding: 10px 12px;
+  }
+
+  .knockout-versus {
+    grid-template-columns: 1fr;
+  }
+}
+
 /* final flag fallbacks */
 .knockout-flag.flag-za { background: linear-gradient(135deg, #007a4d 0 28%, #ffb612 28% 36%, #000 36% 46%, #fff 46% 54%, #de3831 54% 76%, #002395 76%) !important; }
 .knockout-flag.flag-de { background: linear-gradient(#000 0 33%, #dd0000 33% 66%, #ffce00 66%) !important; }
