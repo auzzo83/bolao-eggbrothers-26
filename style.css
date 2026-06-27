@@ -5292,3 +5292,499 @@ body::after {
 .knockout-match-grid {
   gap: 18px !important;
 }
+
+/* ==================== FINAL UX FIX: FAST, CLEAN, CLICKABLE ==================== */
+
+body::before,
+body::after,
+.hero::before,
+.nav::before,
+.kpi::before,
+.podium-card::before,
+.premium-match-card::before,
+.bonus-card::before,
+.curiosity-card::before,
+.ranking-board::before,
+.chart-card::before,
+.roast-card::before,
+.story-main::before,
+.story-mini::before,
+.modal-box::before,
+.empty-state::before,
+.table-wrap::before,
+.match-card::before,
+.knockout-help::before,
+.knockout-board::before,
+.knockout-phase::before,
+.arcade-stat-card::before,
+.knockout-match-card::before,
+.shame-row::before,
+.match-pred-row::before,
+.mini-rank-row::before,
+.arena-card::before,
+.news-card::before,
+.insight-card::before,
+.history-row::before,
+.achievement-row::before,
+.sim-card::before,
+.nav-btn::before,
+.filter-btn::before,
+.arcade-music-btn::before,
+.share-btn::before,
+.match-arcade-strip button::before,
+.section-icon::before,
+.podium-medal::before,
+.curiosity-icon::before,
+.arena-icon::before,
+.news-icon::before,
+.insight-icon::before,
+.avatar::before,
+.podium-avatar::before,
+.knockout-flag::before,
+.badge::before,
+.status-pill::before,
+.pts-badge::before,
+.aprv-pill::before,
+.bonus-badge::before,
+.shame-pos::before,
+.shame-tag::before,
+.badge-pill::before,
+.achievement-badge::before {
+  display: none !important;
+  content: none !important;
+}
+
+html,
+body {
+  min-height: 100% !important;
+  overflow-x: hidden !important;
+}
+
+body {
+  background: linear-gradient(180deg, #eef7ff 0%, #d9ebf8 42%, #c8dfef 100%) !important;
+}
+
+.hero,
+.nav,
+main,
+.page,
+.modal-overlay,
+button,
+[onclick],
+.ranking-row,
+.match-card,
+.premium-match-card,
+.knockout-match-card,
+.shame-row,
+.curiosity-card,
+.bonus-card,
+.podium-card {
+  pointer-events: auto !important;
+}
+
+.hero {
+  margin-top: 0 !important;
+  min-height: 150px !important;
+  padding: 22px clamp(16px, 4vw, 48px) 18px !important;
+  align-items: center !important;
+  background: linear-gradient(180deg, #67c7fb 0%, #178bdc 52%, #0869b4 100%) !important;
+}
+
+.hero h1 {
+  font-size: clamp(34px, 5vw, 58px) !important;
+  line-height: 1.02 !important;
+  margin-bottom: 8px !important;
+}
+
+.hero-meta {
+  gap: 10px !important;
+}
+
+.hero-card {
+  min-width: 170px !important;
+  padding: 12px 16px !important;
+}
+
+.nav {
+  top: 0 !important;
+  z-index: 200 !important;
+  padding: 8px clamp(12px, 4vw, 48px) !important;
+  gap: 8px !important;
+  background: linear-gradient(180deg, #fafdff 0%, #d6edf9 52%, #93c7ec 100%) !important;
+}
+
+.nav-btn,
+.filter-btn,
+.arcade-music-btn,
+.share-btn,
+.match-arcade-strip button,
+.knockout-match-card .match-arcade-strip button {
+  cursor: pointer !important;
+  min-height: 38px !important;
+  padding: 8px 14px !important;
+  transition: transform .12s ease, box-shadow .12s ease, background .12s ease !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.85), 0 2px 5px rgba(42, 95, 142, .14) !important;
+}
+
+.nav-btn:hover,
+.filter-btn:hover,
+.share-btn:hover,
+.knockout-match-card:hover,
+.premium-match-card:hover,
+.match-card:hover,
+.podium-card:hover,
+.curiosity-card:hover,
+.bonus-card:hover,
+.shame-row:hover {
+  transform: translateY(-1px) !important;
+}
+
+.nav-btn:active,
+.filter-btn:active,
+.arcade-music-btn:active,
+.share-btn:active,
+.knockout-match-card:active,
+.premium-match-card:active,
+.match-card:active,
+.podium-card:active,
+.curiosity-card:active,
+.bonus-card:active,
+.shame-row:active {
+  transform: translateY(1px) !important;
+}
+
+main {
+  max-width: 1240px !important;
+  padding: 24px clamp(14px, 3.5vw, 42px) 72px !important;
+}
+
+.section-title {
+  margin: 28px 0 14px !important;
+}
+
+.kpi-grid,
+.podium-grid,
+.premium-match-grid,
+.bonus-grid,
+.curiosity-grid,
+.arcade-stat-grid,
+.knockout-match-grid,
+.two-column-grid {
+  gap: 16px !important;
+}
+
+.kpi,
+.podium-card,
+.premium-match-card,
+.bonus-card,
+.curiosity-card,
+.ranking-board,
+.chart-card,
+.roast-card,
+.story-main,
+.story-mini,
+.modal-box,
+.empty-state,
+.table-wrap,
+.match-card,
+.knockout-help,
+.knockout-board,
+.knockout-phase,
+.arcade-stat-card,
+.knockout-match-card,
+.shame-row,
+.match-pred-row,
+.mini-rank-row {
+  overflow: visible !important;
+  background: linear-gradient(180deg, #ffffff 0%, #f7fbff 56%, #e0f0fb 100%) !important;
+  border: 1px solid rgba(76, 137, 185, .30) !important;
+  box-shadow: 0 8px 20px rgba(52, 104, 148, .13), 0 1px 2px rgba(0,0,0,.06) !important;
+}
+
+.shame-row,
+.mini-rank-row,
+.match-pred-row {
+  min-height: 70px !important;
+}
+
+.knockout-board {
+  padding: 18px !important;
+}
+
+.knockout-phase {
+  padding: 16px !important;
+}
+
+.knockout-match-card {
+  padding: 16px !important;
+}
+
+.knockout-versus {
+  margin: 14px 0 !important;
+}
+
+.knockout-team strong,
+.shame-info strong,
+.table-player strong,
+.podium-name {
+  color: #0f2436 !important;
+}
+
+.shame-info small,
+.kpi small,
+.arcade-stat-card small,
+.knockout-help span {
+  color: #486980 !important;
+}
+
+.shame-pos,
+.shame-tag,
+.avatar,
+.podium-avatar,
+.section-icon,
+.badge,
+.status-pill,
+.pts-badge,
+.aprv-pill,
+.bonus-badge,
+.badge-pill,
+.achievement-badge {
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.75), 0 2px 5px rgba(0,92,180,.16) !important;
+}
+
+@media (max-width: 760px) {
+  .hero {
+    min-height: auto !important;
+    padding: 20px 14px 16px !important;
+  }
+
+  .hero-meta {
+    width: 100% !important;
+  }
+
+  .hero-card {
+    min-width: 0 !important;
+  }
+
+  .nav {
+    padding: 8px 10px !important;
+  }
+
+  main {
+    padding: 18px 12px 64px !important;
+  }
+
+  .podium-grid,
+  .premium-match-grid,
+  .two-column-grid {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* ==================== EMERGENCY UX PASS: USABILIDADE PRIMEIRO ==================== */
+
+* {
+  scroll-behavior: auto !important;
+  -webkit-tap-highlight-color: rgba(0, 122, 255, .18);
+}
+
+body::before,
+body::after,
+.hero::before,
+.hero::after,
+.nav::before,
+.nav::after,
+.page::before,
+.page::after,
+.kpi::before,
+.kpi::after,
+.podium-card::before,
+.podium-card::after,
+.premium-match-card::before,
+.premium-match-card::after,
+.knockout-match-card::before,
+.knockout-match-card::after,
+.ranking-board::before,
+.ranking-board::after,
+.chart-card::before,
+.chart-card::after,
+.roast-card::before,
+.roast-card::after {
+  display: none !important;
+  content: none !important;
+}
+
+html,
+body {
+  margin: 0 !important;
+  padding: 0 !important;
+  overflow-x: hidden !important;
+}
+
+body {
+  color: #12263a !important;
+  background: linear-gradient(180deg, #f8fcff 0%, #dcecf7 54%, #c7ddea 100%) !important;
+}
+
+.hero {
+  margin: 0 !important;
+  min-height: 132px !important;
+  padding: 18px clamp(14px, 4vw, 42px) 16px !important;
+  overflow: visible !important;
+  transform: none !important;
+  border-radius: 0 0 18px 18px !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.65), 0 8px 18px rgba(20,95,150,.16) !important;
+}
+
+.nav {
+  position: sticky !important;
+  top: 0 !important;
+  margin: 0 !important;
+  z-index: 500 !important;
+  overflow-x: auto !important;
+  overflow-y: hidden !important;
+  overscroll-behavior-x: contain !important;
+  -webkit-overflow-scrolling: touch !important;
+  box-shadow: 0 4px 12px rgba(41, 95, 142, .12) !important;
+}
+
+main {
+  margin-top: 0 !important;
+  padding-top: 18px !important;
+}
+
+button,
+[role="button"],
+.nav-btn,
+.filter-btn,
+.arcade-music-btn,
+.share-btn,
+.match-arcade-strip button,
+.ranking-row,
+.match-card,
+.premium-match-card,
+.knockout-match-card,
+.podium-card,
+.curiosity-card,
+.bonus-card,
+.shame-row {
+  pointer-events: auto !important;
+  touch-action: manipulation !important;
+}
+
+.nav-btn,
+.filter-btn,
+.arcade-music-btn,
+.share-btn,
+.match-arcade-strip button {
+  flex: 0 0 auto !important;
+  min-height: 40px !important;
+  line-height: 1.15 !important;
+  user-select: none !important;
+  border-radius: 16px !important;
+}
+
+.page,
+.kpi,
+.podium-card,
+.premium-match-card,
+.knockout-match-card,
+.ranking-board,
+.chart-card,
+.roast-card,
+.story-main,
+.story-mini,
+.table-wrap,
+.bonus-card,
+.curiosity-card,
+.shame-row,
+.match-pred-row,
+.mini-rank-row {
+  animation: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  filter: none !important;
+}
+
+.nav-btn:hover,
+.filter-btn:hover,
+.share-btn:hover,
+.premium-match-card:hover,
+.knockout-match-card:hover,
+.podium-card:hover,
+.bonus-card:hover,
+.curiosity-card:hover,
+.shame-row:hover {
+  transform: translateY(-1px) !important;
+}
+
+.nav-btn:active,
+.filter-btn:active,
+.arcade-music-btn:active,
+.share-btn:active,
+.premium-match-card:active,
+.knockout-match-card:active,
+.podium-card:active,
+.bonus-card:active,
+.curiosity-card:active,
+.shame-row:active {
+  transform: translateY(0) scale(.99) !important;
+}
+
+.live-badge,
+.live-status,
+.status-live,
+.match-card.live,
+.premium-match-card.live {
+  animation-duration: 1.15s !important;
+}
+
+@media (max-width: 760px) {
+  .hero {
+    min-height: auto !important;
+    padding: 16px 12px 14px !important;
+    border-radius: 0 0 14px 14px !important;
+  }
+
+  .hero h1 {
+    font-size: 32px !important;
+  }
+
+  .hero-meta {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+  }
+
+  .hero-card {
+    padding: 10px 12px !important;
+  }
+
+  .nav {
+    padding: 7px 10px !important;
+    gap: 7px !important;
+  }
+
+  .nav-btn,
+  .filter-btn,
+  .arcade-music-btn,
+  .share-btn {
+    min-height: 38px !important;
+    padding: 8px 12px !important;
+    font-size: 13px !important;
+  }
+
+  main {
+    padding: 14px 10px 60px !important;
+  }
+
+  .kpi-grid,
+  .podium-grid,
+  .premium-match-grid,
+  .bonus-grid,
+  .curiosity-grid,
+  .arcade-stat-grid,
+  .knockout-match-grid,
+  .two-column-grid {
+    gap: 12px !important;
+  }
+}
