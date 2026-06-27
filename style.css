@@ -2320,6 +2320,91 @@ tr:hover td,
   box-shadow: 0 4px 0 rgba(0,0,0,.45), 0 0 20px rgba(255,49,88,.09);
 }
 
+.knockout-help,
+.knockout-board,
+.knockout-phase {
+  position: relative;
+  background:
+    linear-gradient(180deg, rgba(15, 42, 31, .96), rgba(3, 10, 8, .96)),
+    repeating-linear-gradient(0deg, rgba(85,255,127,.045) 0 1px, transparent 1px 5px);
+  border: 2px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow), inset 0 0 26px rgba(0,229,255,.04);
+}
+
+.knockout-help {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 18px;
+  padding: 16px;
+}
+
+.knockout-help strong,
+.knockout-phase h3 {
+  color: var(--gold);
+  font-family: var(--pixel);
+  letter-spacing: .4px;
+}
+
+.knockout-help span {
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.knockout-board {
+  margin: 18px 0;
+  overflow: hidden;
+}
+
+.knockout-phases {
+  display: grid;
+  gap: 18px;
+}
+
+.knockout-phase {
+  padding: 16px;
+}
+
+.knockout-phase h3 {
+  margin-bottom: 14px;
+  font-size: 15px;
+}
+
+.knockout-match-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 14px;
+}
+
+.knockout-match-card {
+  position: relative;
+  cursor: pointer;
+  padding: 16px;
+  border: 2px solid rgba(0,229,255,.26);
+  border-radius: var(--radius);
+  background: linear-gradient(180deg, rgba(7,21,16,.96), rgba(0,0,0,.28));
+  box-shadow: 0 5px 0 rgba(0,0,0,.45), inset 0 0 22px rgba(0,229,255,.04);
+  transition: transform .16s ease, border-color .16s ease, box-shadow .16s ease;
+}
+
+.knockout-match-card:hover {
+  transform: translateY(-3px);
+  border-color: var(--gold);
+  box-shadow: 0 8px 0 rgba(0,0,0,.45), 0 0 20px rgba(255,240,74,.13);
+}
+
+.knockout-match-card.pending {
+  opacity: .76;
+}
+
+.knockout-match-card.finished {
+  border-color: rgba(85,255,127,.5);
+}
+
+.knockout-match-card.open {
+  border-color: rgba(255,240,74,.5);
+}
+
 .goal-cheer-toast {
   position: fixed;
   left: 50%;
@@ -2441,6 +2526,14 @@ tr:hover td,
 
   .arcade-stat-grid {
     grid-template-columns: 1fr;
+  }
+
+  .knockout-match-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .knockout-match-card .match-card-score {
+    gap: 8px;
   }
 
   .arcade-stat-card {
