@@ -48,6 +48,7 @@
 
   <nav class="nav">
     <button class="nav-btn active" onclick="showPage('home', this)">🏠 Home</button>
+    <button class="nav-btn" onclick="showPage('knockout', this)">Mata-Mata</button>
     <button class="nav-btn" onclick="showPage('ranking', this)">🏆 Ranking</button>
     <button class="nav-btn" onclick="showPage('matches', this)">⚽ Jogos</button>
     <button class="nav-btn" onclick="showPage('round', this)">🔥 Rodada</button>
@@ -109,6 +110,21 @@
       </div>
       <div id="homeCuriosities" class="curiosity-grid"></div>
 
+    </section>
+
+    <!-- MATA-MATA -->
+    <section id="knockout" class="page">
+      <div class="section-title">
+        <span class="section-icon">KO</span>
+        <h2>Fase Final</h2>
+      </div>
+      <div class="knockout-help">
+        <strong>Como pontua no mata-mata</strong>
+        <span>Acertou quem passa: +3 pts. Acertou quem passa e a diferenca de gols: +8 pts. Times ainda indefinidos aparecem como pendentes ate os jogos anteriores fecharem.</span>
+      </div>
+      <div id="knockoutSummary" class="arcade-stat-grid"></div>
+      <div id="knockoutLeaderboard" class="knockout-board"></div>
+      <div id="knockoutBracket" class="knockout-phases"></div>
     </section>
 
     <!-- MODO RODADA -->
