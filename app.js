@@ -1231,7 +1231,7 @@ function renderHome() {
 
   renderPodium();
   renderTodayMatches();
-  renderBonusMatches();
+  renderHomeKnockoutRadar();
   renderHomeCuriosities();
 }
 
@@ -1266,13 +1266,74 @@ function renderTodayMatches() {
   const today = getTodayLocal();
   const liveMatches = matches.filter(isLiveMatch);
   const dayMatches = matches.filter(m => m.date === today && !isLiveMatch(m));
-  let todayMatches = sortMatchesForArcade([...liveMatches, ...dayMatches]);
-  if (!todayMatches.length) todayMatches = sortMatchesForArcade(matches.filter(isFuture)).slice(0, 3);
+  const knockoutDayMatches = knockoutMatches.filter(match => match.date === today);
+  let todayMatches = [
+    ...sortMatchesForArcade([...liveMatches, ...dayMatches]).map(match => ({ type: "group", match })),
+    ...sortKnockoutMatchesForHome(knockoutDayMatches).map(match => ({ type: "knockout", match }))
+  ];
+  if (!todayMatches.length) {
+    todayMatches = [
+      ...sortKnockoutMatchesForHome(knockoutMatches.filter(match => getKnockoutStatus(match) === "Aberto")).slice(0, 3).map(match => ({ type: "knockout", match })),
+      ...sortMatchesForArcade(matches.filter(isFuture)).slice(0, 3).map(match => ({ type: "group", match }))
+    ].slice(0, 4);
+  }
   setHTML("todayMatches",
     todayMatches.length
-      ? todayMatches.map(renderPremiumMatchCard).join("")
+      ? todayMatches.map(item => item.type === "knockout" ? renderHomeKnockoutMatchCard(item.match) : renderPremiumMatchCard(item.match)).join("")
       : `<div class="empty-state">📭 Nenhum jogo cadastrado para hoje.</div>`
   );
+}
+
+function getKnockoutTimestamp(match) {
+  const parsed = new Date(`${match.date || "2999-12-31"}T${match.time || "23:59"}`);
+  return Number.isNaN(parsed.getTime()) ? Number.MAX_SAFE_INTEGER : parsed.getTime();
+}
+
+function sortKnockoutMatchesForHome(list) {
+  return [...list].sort((a, b) => {
+    const statusWeight = match => getKnockoutStatus(match) === "Finalizado" ? 1 : getKnockoutStatus(match) === "Aberto" ? 3 : 2;
+    const diff = statusWeight(b) - statusWeight(a);
+    if (diff) return diff;
+    return getKnockoutTimestamp(a) - getKnockoutTimestamp(b);
+  });
+}
+
+function renderHomeKnockoutMatchCard(match) {
+  const home = getKnockoutTeam(match, "home");
+  const away = getKnockoutTeam(match, "away");
+  const status = getKnockoutStatus(match);
+  const predCount = getKnockoutPredictionRows(match.match_id).filter(pred => isFilled(pred.pred_home) && isFilled(pred.pred_away)).length;
+  return `
+    <div class="premium-match-card knockout-home-card ${status === "Finalizado" ? "finished" : status === "Aberto" ? "live" : ""}" onclick="openKnockoutMatchModal('${match.match_id}')" style="cursor:pointer" title="Ver palpites do mata-mata">
+      <div class="premium-match-head">
+        <div class="match-meta-left">
+          <span class="match-num">${match.match_id}</span>
+          <span class="match-group">${match.phase || "Mata-Mata"}</span>
+          <span class="status-pill ${status === "Finalizado" ? "status-done" : status === "Aberto" ? "status-live" : "status-future"}">${status}</span>
+        </div>
+        <div class="match-meta-right">
+          <span class="match-time">${match.time || "-"}</span>
+          <span class="match-date">${formatDateBR(match.date)}</span>
+        </div>
+      </div>
+      <div class="premium-versus">
+        <div class="team-side">
+          ${renderKnockoutFlag(home)}
+          <strong>${home}</strong>
+        </div>
+        <div class="vs-block">
+          ${isFilled(match.home_score) && isFilled(match.away_score)
+            ? `<div class="score-live">${match.home_score}<span>x</span>${match.away_score}</div>`
+            : `<span class="vs-text">VS</span>`}
+        </div>
+        <div class="team-side">
+          ${renderKnockoutFlag(away)}
+          <strong>${away}</strong>
+        </div>
+      </div>
+      <div class="match-drama">🏁 ${predCount} palpite(s) publicados · +3 quem passa / +8 com margem</div>
+    </div>
+  `;
 }
 
 function renderPremiumMatchCard(match) {
@@ -1442,6 +1503,49 @@ function renderBonusMatchCard(match) {
       }
     </div>
   `;
+}
+
+function renderHomeKnockoutRadar() {
+  const board = getKnockoutLeaderboard();
+  const finalBoard = getFinalLeaderboard();
+  const openMatches = knockoutMatches.filter(match => getKnockoutStatus(match) === "Aberto").length;
+  const finishedMatches = knockoutMatches.filter(match => getKnockoutStatus(match) === "Finalizado").length;
+  const nextMatches = sortKnockoutMatchesForHome(knockoutMatches.filter(match => getKnockoutStatus(match) !== "Finalizado")).slice(0, 2);
+  const nextText = nextMatches.length
+    ? nextMatches.map(match => `${getTeamFlag(getKnockoutTeam(match, "home"))} ${getKnockoutTeam(match, "home")} x ${getKnockoutTeam(match, "away")} ${getTeamFlag(getKnockoutTeam(match, "away"))}`).join(" · ")
+    : "Aguardando definicao dos confrontos";
+
+  setHTML("homeKnockoutRadar", `
+    <button class="bonus-card knockout-radar-card" onclick="goToPage('knockout')">
+      <div class="bonus-card-top">
+        <span class="bonus-badge">🏁 Fase final</span>
+        <span class="status-pill status-live">${openMatches} abertos</span>
+      </div>
+      <div class="bonus-score">${finishedMatches}/${knockoutMatches.length || 0}</div>
+      <div class="bonus-winners muted">jogos finalizados no mata-mata</div>
+    </button>
+    <button class="bonus-card knockout-radar-card" onclick="goToPage('ranking')">
+      <div class="bonus-card-top">
+        <span class="bonus-badge">🏆 Ranking final</span>
+      </div>
+      <div class="bonus-score">${finalBoard[0] ? finalBoard[0].name : "A definir"}</div>
+      <div class="bonus-winners muted">${finalBoard[0] ? `${finalBoard[0].totalPoints} pts somando grupos + mata-mata` : "sem dados ainda"}</div>
+    </button>
+    <button class="bonus-card knockout-radar-card" onclick="goToPage('knockout')">
+      <div class="bonus-card-top">
+        <span class="bonus-badge">🎯 Líder KO</span>
+      </div>
+      <div class="bonus-score">${board[0] ? board[0].name : "A definir"}</div>
+      <div class="bonus-winners muted">${board[0] ? `${board[0].points} pts na fase final` : "aguardando palpites"}</div>
+    </button>
+    <button class="bonus-card knockout-radar-card" onclick="goToPage('knockout')">
+      <div class="bonus-card-top">
+        <span class="bonus-badge">📅 Próximos KO</span>
+      </div>
+      <div class="bonus-winners">${nextText}</div>
+      <div class="bonus-winners muted">tambem aparecem em Jogos do Dia quando tiverem data de hoje</div>
+    </button>
+  `);
 }
 
 function renderHomeCuriosities() {
@@ -1875,6 +1979,8 @@ function normalizeKnockoutData() {
     game_no: row.game_no || row.jogo || "",
     home_team: row.home_team || row.mandante || row.mandante_base || "",
     away_team: row.away_team || row.visitante || row.visitante_base || "",
+    date: row.date || row.data || "",
+    time: row.time || row.hora || "",
     home_score: row.home_score || row.gols_mandante || "",
     away_score: row.away_score || row.gols_visitante || "",
     status: row.status_site || row.status || row.status_base || "",
