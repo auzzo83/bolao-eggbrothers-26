@@ -582,7 +582,7 @@ function showPage(pageId, btn) {
   document.getElementById(pageId).classList.add("active");
   document.querySelectorAll(".nav-btn").forEach(b => b.classList.remove("active"));
   if (btn) btn.classList.add("active");
-  window.scrollTo({ top: 0, behavior: "smooth" });
+  window.scrollTo({ top: 0, behavior: "auto" });
   if (pageId === "charts") setTimeout(renderCharts, 100);
   if (pageId === "arena") renderArena();
   if (pageId === "round") renderRoundMode();
