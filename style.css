@@ -5945,3 +5945,90 @@ table {
     min-height: 220px !important;
   }
 }
+
+/* ==================== CLICK FIX FINAL: CAMADAS INVISIVEIS NAO CLICAM ==================== */
+
+.hero {
+  position: relative !important;
+  z-index: 2 !important;
+}
+
+.nav {
+  position: sticky !important;
+  top: 0 !important;
+  z-index: 3000 !important;
+  pointer-events: auto !important;
+}
+
+.nav *,
+button,
+[onclick],
+.filter-btn,
+.share-btn,
+.arcade-music-btn,
+.match-arcade-strip button {
+  pointer-events: auto !important;
+}
+
+main {
+  position: relative !important;
+  z-index: 1 !important;
+}
+
+.page:not(.active),
+.page:not(.active) * {
+  pointer-events: none !important;
+}
+
+.page.active,
+.page.active * {
+  pointer-events: auto;
+}
+
+.modal-overlay {
+  position: fixed !important;
+  inset: 0 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  opacity: 0 !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+  z-index: -1 !important;
+}
+
+.modal-overlay:not(.open),
+.modal-overlay:not(.open) * {
+  pointer-events: none !important;
+}
+
+.modal-overlay.open {
+  opacity: 1 !important;
+  visibility: visible !important;
+  pointer-events: auto !important;
+  z-index: 5000 !important;
+}
+
+.modal-overlay.open .modal-box,
+.modal-overlay.open .modal-box * {
+  pointer-events: auto !important;
+}
+
+.modal-box {
+  position: relative !important;
+  max-height: min(86vh, 760px) !important;
+  overflow-y: auto !important;
+}
+
+body::before,
+body::after,
+.hero::before,
+.hero::after,
+.nav::before,
+.nav::after,
+main::before,
+main::after,
+.page::before,
+.page::after {
+  pointer-events: none !important;
+}
