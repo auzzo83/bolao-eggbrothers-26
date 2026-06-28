@@ -1891,6 +1891,7 @@ function normalizeKnockoutData() {
     phase: row.phase || row.fase || "",
     home_team: row.home_team || row.mandante || "",
     away_team: row.away_team || row.visitante || "",
+    penalty_winner: row.penalty_winner || row.penal_winner || row.quem_passa_penal || row.quem_passa || row.passa_penal || row["if penal quem passa"] || "",
     points: row.points || row.pontos || "",
     locked: row.locked || row.travado || "NAO"
   }));
@@ -2075,15 +2076,23 @@ function renderKnockoutFlag(teamName, extraClass = "") {
   `;
 }
 
-function scoreKnockoutPrediction(match, pred) {
-  if (isFilled(pred.points)) return num(pred.points);
-  if (!match || !isFilled(match.home_score) || !isFilled(match.away_score)) return 0;
-  if (!isFilled(pred.pred_home) || !isFilled(pred.pred_away)) return 0;
+function getKnockoutPredictedWinner(match, pred) {
+  if (!match || !pred || !isFilled(pred.pred_home) || !isFilled(pred.pred_away)) return "";
   const home = getKnockoutTeam(match, "home");
   const away = getKnockoutTeam(match, "away");
+  const predHome = num(pred.pred_home);
+  const predAway = num(pred.pred_away);
+  if (predHome > predAway) return home;
+  if (predAway > predHome) return away;
+  return pred.penalty_winner || pred["if penal quem passa"] || "";
+}
+
+function scoreKnockoutPrediction(match, pred) {
+  if (!match || !isFilled(match.home_score) || !isFilled(match.away_score)) return isFilled(pred.points) ? num(pred.points) : 0;
+  if (!isFilled(pred.pred_home) || !isFilled(pred.pred_away)) return 0;
   const realWinner = getKnockoutWinner(match);
-  const predWinner = num(pred.pred_home) > num(pred.pred_away) ? home : num(pred.pred_away) > num(pred.pred_home) ? away : "";
-  if (!predWinner || predWinner !== realWinner) return 0;
+  const predWinner = getKnockoutPredictedWinner(match, pred);
+  if (!predWinner || !sameTeam(predWinner, realWinner)) return 0;
   return Math.abs(num(pred.pred_home) - num(pred.pred_away)) === Math.abs(num(match.home_score) - num(match.away_score)) ? 8 : 3;
 }
 
@@ -2206,12 +2215,16 @@ function openKnockoutMatchModal(matchId) {
         const pts = scoreKnockoutPrediction(match, pred);
         const predHome = pred.home_team || home;
         const predAway = pred.away_team || away;
+        const predWinner = getKnockoutPredictedWinner(match, pred);
+        const penaltyNote = num(pred.pred_home) === num(pred.pred_away) && predWinner
+          ? ` · passa: ${getTeamFlag(predWinner)} ${predWinner}`
+          : "";
         return `
           <div class="match-pred-row" onclick="${pred.participant_id ? `openParticipantModal('${pred.participant_id}')` : ""}">
             ${renderAvatar(pred.participant_name || getParticipantName(pred.participant_id), 32)}
             <div class="pred-info">
               <strong>${pred.participant_name || getParticipantName(pred.participant_id)}</strong>
-              <small>${getTeamFlag(predHome)} ${predHome} ${pred.pred_home || "-"} x ${pred.pred_away || "-"} ${predAway} ${getTeamFlag(predAway)}</small>
+              <small>${getTeamFlag(predHome)} ${predHome} ${pred.pred_home || "-"} x ${pred.pred_away || "-"} ${predAway} ${getTeamFlag(predAway)}${penaltyNote}</small>
             </div>
             <span class="pts-badge ${pts === 8 ? "pts-bonus" : pts === 3 ? "pts-3" : "pts-0"}">${pts ? `+${pts}` : "0"}</span>
           </div>
