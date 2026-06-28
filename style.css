@@ -6736,3 +6736,86 @@ button,
     border-radius: 14px !important;
   }
 }
+
+/* ==================== BLUE GLASS HOME UPDATE ==================== */
+
+body {
+  background:
+    radial-gradient(circle at 18% 0%, rgba(255,255,255,.82) 0 9%, transparent 30%),
+    radial-gradient(circle at 82% 4%, rgba(72, 191, 255, .42) 0 18%, transparent 38%),
+    linear-gradient(180deg, rgba(53, 165, 235, .34), rgba(255,255,255,0) 240px),
+    repeating-linear-gradient(0deg, rgba(255,255,255,.18) 0 1px, rgba(23, 119, 188, .10) 1px 4px),
+    linear-gradient(180deg, #95d5fb 0%, #63b9ee 42%, #3e9bd8 100%) !important;
+}
+
+main {
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.20), rgba(255,255,255,.06)) !important;
+  border-left: 1px solid rgba(255,255,255,.34) !important;
+  border-right: 1px solid rgba(0,82,145,.16) !important;
+}
+
+.kpi,
+.podium-card,
+.premium-match-card,
+.bonus-card,
+.curiosity-card,
+.ranking-board,
+.chart-card,
+.roast-card,
+.story-main,
+.story-mini,
+.table-wrap,
+.match-card,
+.knockout-help,
+.knockout-board,
+.knockout-phase,
+.arcade-stat-card,
+.knockout-match-card,
+.shame-row,
+.match-pred-row,
+.mini-rank-row,
+.news-card,
+.arena-card,
+.insight-card,
+.history-row,
+.achievement-row,
+.sim-card,
+.impact-panel,
+.share-box {
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.82) 0%, rgba(239,249,255,.66) 48%, rgba(184,224,250,.58) 49%, rgba(106,184,232,.50) 100%) !important;
+  border-color: rgba(255,255,255,.56) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.90),
+    inset 0 -1px 0 rgba(0,83,150,.12),
+    0 7px 18px rgba(0,81,145,.18) !important;
+}
+
+.empty-state {
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.74), rgba(166,218,248,.50)) !important;
+  border: 1px solid rgba(255,255,255,.58) !important;
+  color: #173a56 !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.85), 0 6px 16px rgba(0,81,145,.14) !important;
+}
+
+.knockout-radar-card {
+  text-align: left !important;
+  cursor: pointer !important;
+}
+
+.knockout-radar-card .bonus-score {
+  color: #123a5c !important;
+  font-size: clamp(24px, 2.5vw, 34px) !important;
+  line-height: 1.05 !important;
+  text-align: left !important;
+}
+
+.knockout-home-card {
+  border-color: rgba(255, 204, 0, .46) !important;
+}
+
+.knockout-home-card .match-drama {
+  color: #31516a !important;
+}
